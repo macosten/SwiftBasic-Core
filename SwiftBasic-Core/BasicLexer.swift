@@ -31,7 +31,7 @@ class BasicLexer: NSObject {
         var i = 0 // Since we're going through the input one character at a time, we'll need tighter control over the loop index than we normally get with a for loop...
         
         //For each character...
-        while i < inputCharArray.count {
+        while i < inputLine.count {
             
             //Skip this character if it's whitespace.
             if inputCharArray[i].isWhitespace {
@@ -46,7 +46,7 @@ class BasicLexer: NSObject {
             if inputCharArray[i].isValidForGeneralToken {
                 tokenBuffer.append(inputCharArray[i])
                 //Append to this token until we reach whitespace
-                while i < inputCharArray.count {
+                while i < inputLine.count {
                     //While the next character is valid for a token,
                     if inputCharArray[i+1].isValidForGeneralToken {
                         tokenBuffer.append(inputCharArray[i+1])
@@ -64,7 +64,7 @@ class BasicLexer: NSObject {
             // Really the only difference is that we check for a quote instead of for one of a few characters
             if inputCharArray[i] == "\"" {
                 tokenBuffer.append(inputCharArray[i])
-                while i < inputCharArray.count {
+                while i < inputLine.count {
                     if inputCharArray[i+1] != "\"" {
                         tokenBuffer.append(inputCharArray[i+1])
                     } else {
@@ -81,7 +81,7 @@ class BasicLexer: NSObject {
             // Operators
             if inputCharArray[i].isOperator {
                 tokenBuffer.append(inputCharArray[i])
-                while i < inputCharArray.count {
+                while i < inputLine.count {
                     if inputCharArray[i+1].isOperator {
                         tokenBuffer.append(inputCharArray[i+1])
                     } else {

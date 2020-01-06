@@ -10,3 +10,12 @@ import Foundation
 
 print("Hello, World!")
 
+
+let lexer = BasicLexer()
+
+do {
+    let tokens = try lexer.getTokens(inputLine: "10 PRINT \"HELLO WORLD\"")
+    print(tokens)
+} catch {
+    print(error)
+}
