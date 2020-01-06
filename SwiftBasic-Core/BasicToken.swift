@@ -173,8 +173,8 @@ struct BasicToken {
         // Otherwise...
         default:
             //
-            if Double(inString) != nil {type = .double }
-            else if Int(inString) != nil { type = .integer }
+            if Int(inString) != nil { type = .integer }
+            else if Double(inString) != nil {type = .double }
             else if (inString.prefix(1) == "\"") && (inString.suffix(1) == "\"") { type = .stringLiteral }
             else { type = .identifier }
             
