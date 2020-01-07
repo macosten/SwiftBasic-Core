@@ -95,7 +95,7 @@ struct BasicToken {
         // case octothorpe
         
     }
-    
+    // MARK: - Variables
     let type : TokenType
     let rawValue : String
     var stringValue : String? {
@@ -107,6 +107,11 @@ struct BasicToken {
     }
     var intValue : Int? { return Int(rawValue) }
     var doubleValue : Double? { return Double(rawValue) }
+    
+    /// Returns true if this token is a relation, like .notEqualTo.
+    var isRelation : Bool {
+        return type == .equalTo || type == .notEqualTo || type == .lessThan || type == .greaterThan || type == .lessThanOrEqualTo || type == .greaterThanOrEqualTo
+    }
     
     // MARK: - Initializers
     init(_ inString: String) {
@@ -193,12 +198,11 @@ struct BasicToken {
         rawValue = withRawValue
     }
     
+    // MARK: - Functions
     /// Returns an end-of-line BasicToken.
     static func endOfLineToken() -> BasicToken {
         return BasicToken(withType: .endOfLine, withRawValue: "\n")
     }
-    
-    
     
     
 }

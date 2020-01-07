@@ -6,19 +6,13 @@
 //  Copyright © 2020 Zaccari Silverman. All rights reserved.
 //
 
-import Cocoa
+import Foundation
 
+/// A Lexer for Basic. More of a namespace than an actual class.
 class BasicLexer: NSObject {
     
-    private enum LexingMode {
-        case code
-        case stringLiteral
-        case comment
-    }
-    
-    //This may need to be changed at some point, but for now, I'll make this a property of the lexer: What character sets are allowable in variable names?
-    
-    func getTokens(inputLine: String) throws -> [BasicToken] {
+    /// Tokenize one line of Basic code.
+    private func getTokensForLine(inputLine: Substring) -> [BasicToken] {
         // This array will store our tokens.
         var tokenArray = [BasicToken]()
         
@@ -101,6 +95,14 @@ class BasicLexer: NSObject {
         //Finally, at the end of the line, add an end-of-line token.
         tokenArray.append(BasicToken.endOfLineToken())
         return tokenArray
+    }
+    
+    /// Tokenize one or more lines of Basic code.
+    func getTokensForFileContents(input: String) -> [[BasicToken]] {
+        var tokens = [[BasicToken]]()
+        let lines = input.split { $0.isNewline }
+        for line in lines { tokens.append(getTokensForLine(inputLine: line)) }
+        return tokens
     }
     
 }

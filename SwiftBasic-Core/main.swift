@@ -13,9 +13,10 @@ print("Hello, World!")
 
 let lexer = BasicLexer()
 
-do {
-    let tokens = try lexer.getTokens(inputLine: "10 PRINT \"HELLO WORLD\"")
-    print(tokens)
-} catch {
-    print(error)
-}
+
+let tokens = lexer.getTokensForFileContents(input: "10 PRINT \"HELLO WORLD\"\n20 GOTO 10")
+print(tokens)
+
+var map = SymbolMap()
+map.insert(name: "var", value: 10)
+print(map.get(symbolNamed: "var")!.value)
