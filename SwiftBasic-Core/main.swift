@@ -40,6 +40,7 @@ func testSymbols() {
     }
 }
 
+// Prints 10 copies of "HELLO WORLD"
 let code = "LET I = 0\n10 PRINT \"HELLO WORLD\"\nLET I = I + 1\nIF I < 10 THEN GOTO 10"
 let console = Console()
 let parser = BasicParser()
@@ -48,4 +49,7 @@ parser.delegate = console
 parser.loadCode(fromString: code)
 try parser.run()
 
-let code2 = "10 "
+// Multiplies the 2 numbers you input, even if one is an integer and the other is a double/float
+let code2 = "INPUT A, B\nPRINT A * B"
+parser.loadCode(fromString: code2)
+try parser.run()

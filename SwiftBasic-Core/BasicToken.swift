@@ -124,6 +124,7 @@ struct BasicToken {
         case "print": type = .print
         case "let": type = .let
         case "if": type = .if
+        case "input": type = .input
         case "then": type = .then
         case "goto": type = .goto
         case "gosub": type = .gosub

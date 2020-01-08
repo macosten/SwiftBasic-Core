@@ -17,6 +17,7 @@ public class BasicParser: NSObject {
         case badExpression(badTokenType: BasicToken.TokenType)
         case badStatement(badTokenType: BasicToken.TokenType, reason: String? = nil)
         case badLine(badTokenType: BasicToken.TokenType)
+        case delegateNotSet
         case uninitializedFactor(name: String)
         case unknownLabelError(desiredLabel: Any)
         case unknownError(inMethodNamed: String, reason: String)
@@ -106,14 +107,17 @@ public class BasicParser: NSObject {
             try eat(.input)
             // Ensure at least one variable is being set.
             let firstVarName = currentToken.rawValue
-            let firstSymbol = try SymbolMap.Symbol(fromString: currentToken.rawValue)
+            guard let delegate = delegate else { throw ParserError.delegateNotSet }
+            let firstInputValue = delegate.handleInput()
+            let firstSymbol = try SymbolMap.Symbol(fromString: firstInputValue)
             try symbolMap.insert(name: firstVarName, value: firstSymbol)
             try eat(.identifier)
             
             while (currentToken.type != .newline) { // Process further tokens
                 try eat(.comma)
                 let varName = currentToken.rawValue
-                let symbol = try SymbolMap.Symbol(fromString: currentToken.rawValue)
+                let inputValue = delegate.handleInput()
+                let symbol = try SymbolMap.Symbol(fromString: inputValue)
                 try symbolMap.insert(name: varName, value: symbol)
                 try eat(.identifier)
             }

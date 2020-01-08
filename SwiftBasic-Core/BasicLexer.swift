@@ -88,6 +88,13 @@ class BasicLexer: NSObject {
                 }
             }
             
+            // Separators
+            if inputCharArray[i].isSeparator {
+                tokenBuffer.append(inputCharArray[i]) // Assuming all separators are only one character.
+                let newToken = BasicToken(tokenBuffer)
+                tokenArray.append(newToken)
+                tokenBuffer.removeAll()
+            }
             
             
             i += 1 //Pretend we're a for loop and increment the index.

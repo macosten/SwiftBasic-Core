@@ -49,7 +49,7 @@ struct SymbolMap {
                 self.type = .double
                 self.value = doubleValue
             }
-            throw SymbolError.unsupportedType(value: string)
+            else { throw SymbolError.unsupportedType(value: string) }
         }
         
         // I really don't like how repetitive this code is, but I suppose this is the price I'm paying for trying to have Symbols support storing multiple types.
