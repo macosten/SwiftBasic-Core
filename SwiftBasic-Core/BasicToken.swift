@@ -122,6 +122,7 @@ struct BasicToken {
             
         // Keywords
         case "print": type = .print
+        case "let": type = .let
         case "if": type = .if
         case "then": type = .then
         case "goto": type = .goto

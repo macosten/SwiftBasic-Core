@@ -82,6 +82,7 @@ class BasicLexer: NSObject {
                         let newToken = BasicToken(tokenBuffer) // Create the new token
                         tokenArray.append(newToken) // Append it to the array
                         tokenBuffer.removeAll() // Clear the token buffer.
+                        break
                     }
                     i += 1
                 }

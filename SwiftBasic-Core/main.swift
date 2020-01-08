@@ -40,10 +40,12 @@ func testSymbols() {
     }
 }
 
-let code = "10 PRINT \"HELLO WORLD\"\n20 GOTO 10"
+let code = "LET I = 0\n10 PRINT \"HELLO WORLD\"\nLET I = I + 1\nIF I < 10 THEN GOTO 10"
 let console = Console()
 let parser = BasicParser()
 parser.delegate = console
 
 parser.loadCode(fromString: code)
 try parser.run()
+
+let code2 = "10 "

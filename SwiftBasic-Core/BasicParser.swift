@@ -117,7 +117,7 @@ public class BasicParser: NSObject {
                 try symbolMap.insert(name: varName, value: symbol)
                 try eat(.identifier)
             }
-            
+            try eat(.newline)
         case .goto:
             try eat(.goto)
             let valueSymbol = try parseExpression()
@@ -125,6 +125,21 @@ public class BasicParser: NSObject {
                 throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
             }
             programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
+        case .gosub:
+            stack.push(programCounter) // Store the program counter on the stack...
+            try eat(.gosub)
+            let valueSymbol = try parseExpression()
+            guard let desiredLabel = valueSymbol.value as? Int, let target = labelMap[desiredLabel] else {
+                throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
+            }
+            programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
+        case .return:
+            try eat(.return)
+            let target = stack.pop()
+            if let target = target { programCounter = target - 1 }
+            try eat(.newline)
+        case .rem: break //Just comments...
+        case .end: programCounter = basicLines.count
         default: throw ParserError.badStatement(badTokenType: currentToken.type)
         }
     }
@@ -217,7 +232,7 @@ public class BasicParser: NSObject {
     }
     
     func run() throws {
-        while programCounter < basicLines.count { // While we're not at the end of the program...
+        while programCounter < basicLines.count-1 { // While we're not at the end of the program...
             tokenIndex = 0 // Reset the token index.
             programCounter += 1 // Increment the program counter (we do this here in case the line modifies the program counter; if we do it after parseLine(), we'd mess it up)
             try parseLine()
