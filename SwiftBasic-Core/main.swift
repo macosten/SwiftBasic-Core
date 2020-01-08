@@ -8,15 +8,42 @@
 
 import Foundation
 
+class Console : BasicDelegate {
+    func handlePrintStatement(stringToPrint: String) { print(stringToPrint) }
+    func handleInput() -> String { readLine() ?? "" }
+}
+
 print("Hello, World!")
 
 
-let lexer = BasicLexer()
+func testSymbols() {
+    let lexer = BasicLexer()
 
 
-let tokens = lexer.getTokensForFileContents(input: "10 PRINT \"HELLO WORLD\"\n20 GOTO 10")
-print(tokens)
+    let tokens = lexer.getTokensForFileContents(input: "10 PRINT \"HELLO WORLD\"\n20 GOTO 10")
+    print(tokens)
 
-var map = SymbolMap()
-map.insert(name: "var", value: 10)
-print(map.get(symbolNamed: "var")!.value)
+    var map = SymbolMap()
+    try! map.insert(name: "var", value: 10)
+    print(map.get(symbolNamed: "var")!.value)
+
+    do {
+        print(try SymbolMap.Symbol(type: .integer, value: 10) + SymbolMap.Symbol(type: .double, value: 4.20))
+        print(try SymbolMap.Symbol(type: .integer, value: 10) - SymbolMap.Symbol(type: .double, value: 4.20))
+        print(try SymbolMap.Symbol(type: .integer, value: 10) * SymbolMap.Symbol(type: .double, value: 4.20))
+        print(try SymbolMap.Symbol(type: .integer, value: 10) / SymbolMap.Symbol(type: .double, value: 4.20))
+        
+        
+        print(try SymbolMap.Symbol(type: .integer, value: 10) / SymbolMap.Symbol(type: .integer, value: 0))
+    } catch {
+        print(error)
+    }
+}
+
+let code = "10 PRINT \"HELLO WORLD\"\n20 GOTO 10"
+let console = Console()
+let parser = BasicParser()
+parser.delegate = console
+
+parser.loadCode(fromString: code)
+try parser.run()

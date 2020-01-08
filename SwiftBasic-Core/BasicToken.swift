@@ -29,7 +29,6 @@ struct BasicToken {
         case run
         case end
         case then
-        case enter
         case rem
         
         // case `break`
@@ -89,8 +88,8 @@ struct BasicToken {
         case stringLiteral
         case function
         
-        // MARK: - End of Line
-        case endOfLine
+        // MARK: - Newline
+        case newline
         
         // case octothorpe
         
@@ -201,7 +200,7 @@ struct BasicToken {
     // MARK: - Functions
     /// Returns an end-of-line BasicToken.
     static func endOfLineToken() -> BasicToken {
-        return BasicToken(withType: .endOfLine, withRawValue: "\n")
+        return BasicToken(withType: .newline, withRawValue: "\n")
     }
     
     
