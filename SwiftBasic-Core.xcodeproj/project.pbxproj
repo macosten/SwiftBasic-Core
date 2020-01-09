@@ -15,6 +15,7 @@
 		119127D423C3B6B100DBC303 /* Stack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D323C3B6B100DBC303 /* Stack.swift */; };
 		119127D623C43F9C00DBC303 /* SymbolMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D523C43F9C00DBC303 /* SymbolMap.swift */; };
 		119127D823C5998600DBC303 /* BasicDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D723C5998600DBC303 /* BasicDelegate.swift */; };
+		119127DA23C6DC0D00DBC303 /* LabelMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D923C6DC0D00DBC303 /* LabelMap.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -39,6 +40,7 @@
 		119127D323C3B6B100DBC303 /* Stack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stack.swift; sourceTree = "<group>"; };
 		119127D523C43F9C00DBC303 /* SymbolMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolMap.swift; sourceTree = "<group>"; };
 		119127D723C5998600DBC303 /* BasicDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDelegate.swift; sourceTree = "<group>"; };
+		119127D923C6DC0D00DBC303 /* LabelMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelMap.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +77,7 @@
 				119127CB23C18F2E00DBC303 /* BasicLexer.swift */,
 				119127CD23C18FE000DBC303 /* BasicToken.swift */,
 				119127D123C3B3F700DBC303 /* BasicParser.swift */,
+				119127D923C6DC0D00DBC303 /* LabelMap.swift */,
 				119127D723C5998600DBC303 /* BasicDelegate.swift */,
 				119127D323C3B6B100DBC303 /* Stack.swift */,
 				119127D523C43F9C00DBC303 /* SymbolMap.swift */,
@@ -141,6 +144,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				119127DA23C6DC0D00DBC303 /* LabelMap.swift in Sources */,
 				119127D023C1C0CA00DBC303 /* Character+isEmoji+isValidForToken.swift in Sources */,
 				119127D223C3B3F700DBC303 /* BasicParser.swift in Sources */,
 				119127D423C3B6B100DBC303 /* Stack.swift in Sources */,

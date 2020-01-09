@@ -27,26 +27,52 @@ public class BasicParser: NSObject {
     
     
     private var symbolMap = SymbolMap()
-    private var labelMap = [Int : Int]() // [Line Number : Index of Basic line]
+    private var labelMap = LabelMap() // [Line Number/Identifier at start of line : Index of Basic line]
     private var basicLines = [[BasicToken]]() // One line of Basic turns into one of the arrays in this 2D array of tokens.
     
     private var programCounter = -1 // This corresponds to a line of code, and thus to an index of basicLines.
     private var tokenIndex = 0
     private var currentToken : BasicToken { basicLines[programCounter][tokenIndex] }
+    private var nextToken : BasicToken? { basicLines[programCounter].indices.contains(tokenIndex+1) ? basicLines[programCounter][tokenIndex + 1] : nil }
     
     private var stack = Stack<Int>()
     
     var delegate : BasicDelegate?
     
-    func loadCode(fromString: String){
+    func loadCode(fromString: String) throws {
+        // Reset the internal state of our data structures.
         symbolMap.removeAll()
         labelMap.removeAll()
-        basicLines = lexer.getTokensForFileContents(input: fromString)
         programCounter = -1
         tokenIndex = 0
         stack = Stack<Int>()
+        
+        // Have the lexer find the tokens in the input string.
+        basicLines = lexer.getTokensForFileContents(input: fromString)
+        
+        // Find all the labels.
+        try findLabels()
     }
 
+    /// Find all the labels in the code. A label is an Integer or an Identifier that may appear at the start of a line.
+    private func findLabels() throws {
+        for index in basicLines.indices {
+            switch basicLines[index].first?.type {
+            case .integer:
+                guard let intValue = basicLines[index].first?.intValue else { // Extract the integer value.
+                    throw ParserError.unknownError(inMethodNamed: "findLabels", reason: "Failed to get integer from integer token. This is a bug.")
+                }
+                labelMap[intValue] = index // Fill in the label mapping.
+            case .identifier:
+                guard let rawIdentifier = basicLines[index].first?.rawValue else { // Extract the raw string value.
+                    throw ParserError.unknownError(inMethodNamed: "findLabel", reason: "Failed to get raw string value from identifier token. This is a bug.")
+                }
+                labelMap[rawIdentifier] = index // Fill in the label mapping.
+            default: // Otherwise, do nothing.
+                break
+            }
+        }
+    }
     
     private func eat(_ expectedType: BasicToken.TokenType) throws {
         if currentToken.type == expectedType { // If the current token's TokenType is what we expect...
@@ -61,6 +87,7 @@ public class BasicParser: NSObject {
             labelMap[currentToken.intValue!] = programCounter
             try eat(.integer)
         }
+        //else if currentToken.type == .identifier { adding support for identifiers as labels should be doable. }
         try parseStatement()
     }
     
@@ -124,24 +151,43 @@ public class BasicParser: NSObject {
             try eat(.newline)
         case .goto:
             try eat(.goto)
-            let valueSymbol = try parseExpression()
-            guard let desiredLabel = valueSymbol.value as? Int, let target = labelMap[desiredLabel] else {
-                throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
+            // If the next token is an identifier, then we should try to jump to it.
+            if let nextToken = nextToken, nextToken.type == .identifier {
+                guard let target = labelMap[nextToken.rawValue] else {
+                    throw ParserError.unknownLabelError(desiredLabel: nextToken.rawValue)
+                }
+                programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
             }
-            programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
-        case .gosub:
+            else { // Otherwise, assume it's an expression that results in an Int.
+                let valueSymbol = try parseExpression()
+                guard let desiredLabel = valueSymbol.value as? Int, let target = labelMap[desiredLabel] else {
+                    throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
+                }
+                programCounter = target - 1
+            }
+        case .gosub: // Almost identical to GOTO but we push the value of the Program Counter to the stack.
             stack.push(programCounter) // Store the program counter on the stack...
             try eat(.gosub)
-            let valueSymbol = try parseExpression()
-            guard let desiredLabel = valueSymbol.value as? Int, let target = labelMap[desiredLabel] else {
-                throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
+            
+            // If the next token is an identifier, then we should try to jump to it.
+            if let nextToken = nextToken, nextToken.type == .identifier {
+                guard let target = labelMap[nextToken.rawValue] else {
+                    throw ParserError.unknownLabelError(desiredLabel: nextToken.rawValue)
+                }
+                programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
             }
-            programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
+            else { // Otherwise, assume it's an expression that results in an Int.
+                let valueSymbol = try parseExpression()
+                guard let desiredLabel = valueSymbol.value as? Int, let target = labelMap[desiredLabel] else {
+                    throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
+                }
+                programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
+            }
         case .return:
             try eat(.return)
-            let target = stack.pop()
-            if let target = target { programCounter = target - 1 }
+            guard let target = stack.pop() else { break } // Should I hrow an error? Stop execution? Do nothing? I'm not really sure. I'll have to go look at what other Basics do.
             try eat(.newline)
+            programCounter = target // We will end up at the line after the line that called the subroutine.
         case .rem: break //Just comments...
         case .end: programCounter = basicLines.count
         default: throw ParserError.badStatement(badTokenType: currentToken.type)

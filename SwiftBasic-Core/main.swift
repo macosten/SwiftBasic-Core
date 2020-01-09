@@ -46,10 +46,16 @@ let console = Console()
 let parser = BasicParser()
 parser.delegate = console
 
-parser.loadCode(fromString: code)
+try parser.loadCode(fromString: code)
 try parser.run()
 
 // Multiplies the 2 numbers you input, even if one is an integer and the other is a double/float
 let code2 = "INPUT A, B\nPRINT A * B"
-parser.loadCode(fromString: code2)
+// try parser.loadCode(fromString: code2)
+// try parser.run()
+
+let code3 = "PRINT \"Want to GOSUB? 0 for yes.\"\nINPUT A\nIF A == 0 THEN GOSUB 1000\nEND\n1000 PRINT \"🎉HELLO from the Subroutine!🎉\"\nRETURN"
+try parser.loadCode(fromString: code3)
 try parser.run()
+
+
