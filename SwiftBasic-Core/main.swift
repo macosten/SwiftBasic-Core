@@ -8,40 +8,14 @@
 
 import Foundation
 
+/// An example of a class that conforms to BasicDelegate; it handles console I/O for the BasicParser.
 class Console : BasicDelegate {
     func handlePrintStatement(stringToPrint: String) { print(stringToPrint) }
     func handleInput() -> String { readLine() ?? "" }
 }
 
-print("Hello, World!")
-
-
-func testSymbols() {
-    let lexer = BasicLexer()
-
-
-    let tokens = lexer.getTokensForFileContents(input: "10 PRINT \"HELLO WORLD\"\n20 GOTO 10")
-    print(tokens)
-
-    var map = SymbolMap()
-    try! map.insert(name: "var", value: 10)
-    print(map.get(symbolNamed: "var")!.value)
-
-    do {
-        print(try SymbolMap.Symbol(type: .integer, value: 10) + SymbolMap.Symbol(type: .double, value: 4.20))
-        print(try SymbolMap.Symbol(type: .integer, value: 10) - SymbolMap.Symbol(type: .double, value: 4.20))
-        print(try SymbolMap.Symbol(type: .integer, value: 10) * SymbolMap.Symbol(type: .double, value: 4.20))
-        print(try SymbolMap.Symbol(type: .integer, value: 10) / SymbolMap.Symbol(type: .double, value: 4.20))
-        
-        
-        print(try SymbolMap.Symbol(type: .integer, value: 10) / SymbolMap.Symbol(type: .integer, value: 0))
-    } catch {
-        print(error)
-    }
-}
-
 // Prints 10 copies of "HELLO WORLD"
-let code = "LET I = 0\n10 PRINT \"HELLO WORLD\"\nLET I = I + 1\nIF I < 10 THEN GOTO 10"
+let code = "LET I = 0\n10 PRINT \"Hello, World!\"\nLET I = I + 1\nIF I < 10 THEN GOTO 10"
 let console = Console()
 let parser = BasicParser()
 parser.delegate = console
@@ -51,10 +25,11 @@ try parser.run()
 
 // Multiplies the 2 numbers you input, even if one is an integer and the other is a double/float
 let code2 = "INPUT A, B\nPRINT A * B"
-// try parser.loadCode(fromString: code2)
-// try parser.run()
+try parser.loadCode(fromString: code2)
+try parser.run()
 
-let code3 = "PRINT \"Want to GOSUB? 0 for yes.\"\nINPUT A\nIF A == 0 THEN GOSUB 1000\nEND\n1000 PRINT \"🎉HELLO from the Subroutine!🎉\"\nRETURN"
+// Demonstrates the use of GOSUB.
+let code3 = "PRINT \"Want to GOSUB? 0 for yes.\"\nINPUT A\nIF A == 0 THEN GOSUB FunkySubroutine\nEND\nFunkySubroutine PRINT \"🎉HELLO from the Subroutine!🎉\"\nRETURN"
 try parser.loadCode(fromString: code3)
 try parser.run()
 

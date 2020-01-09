@@ -53,25 +53,7 @@ class BasicLexer: NSObject {
                     i += 1
                 }
             }
-            
-            // String Literals
-            // Really the only difference is that we check for a quote instead of for one of a few characters
-            if inputCharArray[i] == "\"" {
-                tokenBuffer.append(inputCharArray[i])
-                while i < inputLine.count {
-                    if inputCharArray[i+1] != "\"" {
-                        tokenBuffer.append(inputCharArray[i+1])
-                    } else {
-                        tokenBuffer.append("\"") //Append that last quote
-                        let newToken = BasicToken(tokenBuffer) //Create the new token
-                        tokenArray.append(newToken) // Append it to the array
-                        tokenBuffer.removeAll() // Clear the token buffer.
-                        break
-                    }
-                    i += 1
-                }
-            }
-            
+                        
             // Operators
             if inputCharArray[i].isOperator {
                 tokenBuffer.append(inputCharArray[i])
@@ -96,6 +78,25 @@ class BasicLexer: NSObject {
                 tokenBuffer.removeAll()
             }
             
+            // String Literals
+            // Really the only difference is that we check for a quote instead of for one of a few characters
+            if inputCharArray[i] == "\"" {
+                tokenBuffer.append(inputCharArray[i])
+                while i < inputLine.count {
+                    if inputCharArray[i+1] != "\"" {
+                        tokenBuffer.append(inputCharArray[i+1])
+                    } else {
+                        tokenBuffer.append("\"") //Append that last quote
+                        let newToken = BasicToken(tokenBuffer) //Create the new token
+                        tokenArray.append(newToken) // Append it to the array
+                        tokenBuffer.removeAll() // Clear the token buffer.
+                        break
+                    }
+                    i += 1
+                }
+                i += 1
+                continue // I didn't need to put this here since I also moved it to the end, but what happens when I forget that it's at the end for a reason?
+            }
             
             i += 1 //Pretend we're a for loop and increment the index.
         }

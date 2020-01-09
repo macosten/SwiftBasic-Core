@@ -83,11 +83,9 @@ public class BasicParser: NSObject {
     }
     
     private func parseLine() throws {
-        if currentToken.type == .integer {
-            labelMap[currentToken.intValue!] = programCounter
-            try eat(.integer)
+        if currentToken.type == .integer || currentToken.type == .identifier {
+            try eat(currentToken.type) // Ignore labels -- they've already been processed in findLabels().
         }
-        //else if currentToken.type == .identifier { adding support for identifiers as labels should be doable. }
         try parseStatement()
     }
     
@@ -170,9 +168,9 @@ public class BasicParser: NSObject {
             try eat(.gosub)
             
             // If the next token is an identifier, then we should try to jump to it.
-            if let nextToken = nextToken, nextToken.type == .identifier {
-                guard let target = labelMap[nextToken.rawValue] else {
-                    throw ParserError.unknownLabelError(desiredLabel: nextToken.rawValue)
+            if currentToken.type == .identifier {
+                guard let target = labelMap[currentToken.rawValue] else {
+                    throw ParserError.unknownLabelError(desiredLabel: currentToken.rawValue)
                 }
                 programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
             }
