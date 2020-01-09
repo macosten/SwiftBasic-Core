@@ -24,7 +24,7 @@ try parser.loadCode(fromString: code)
 try parser.run()
 
 // Multiplies the 2 numbers you input, even if one is an integer and the other is a double/float
-let code2 = "INPUT A, B\nPRINT A * B"
+let code2 = "PRINT \"Input two numbers and I'll multiply them!\"\nINPUT A, B\nPRINT A * B"
 try parser.loadCode(fromString: code2)
 try parser.run()
 

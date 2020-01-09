@@ -11,16 +11,15 @@ import Foundation
 public class BasicParser: NSObject {
     
     enum ParserError: Error {
-        case unexpectedToken(expected: BasicToken.TokenType, actual: BasicToken.TokenType, reason: String? = nil)
-        case badTerm(badTokenType: BasicToken.TokenType)
-        case badFactor(badTokenType: BasicToken.TokenType)
-        case badExpression(badTokenType: BasicToken.TokenType)
-        case badStatement(badTokenType: BasicToken.TokenType, reason: String? = nil)
-        case badLine(badTokenType: BasicToken.TokenType)
-        case delegateNotSet
-        case uninitializedFactor(name: String)
-        case unknownLabelError(desiredLabel: Any)
-        case unknownError(inMethodNamed: String, reason: String)
+        case unexpectedToken(expected: BasicToken.TokenType, actual: BasicToken.TokenType, atLine: Int, tokenNumber: Int) // If the expected and actual types of the current token differ, this error will be thrown.
+        // case badTerm(badTokenType: BasicToken.TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Would be thrown if we failed to parse a term. Not yet needed.
+        case badFactor(badTokenType: BasicToken.TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if we failed to parse a factor. atLine and tokenNumber are zero-indexed.
+        // case badExpression(badTokenType: BasicToken.TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Would be thrown if we failed to parse an expression. Not yet needed.
+        case badStatement(badTokenType: BasicToken.TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if we failed to parse a statement. atLine and tokenNumber are zero-indexed.
+        case delegateNotSet // Thrown if self.delegate is nil, but we need a delegate to continue.
+        case uninitializedSymbol(name: String, atLine: Int, tokenNumber: Int) // Thrown if the program attempts to access a symbol with no value.
+        case unknownLabelError(desiredLabel: Any, atLine: Int, tokenNumber: Int) // Thrown if the program attempts to jump to a label that doesn't exist.
+        case unknownError(inMethodNamed: String, reason: String) // Thrown if the parser enters state that it really shouldn't (a bug, in other words).
     }
     
     private let lexer = BasicLexer()
@@ -30,8 +29,8 @@ public class BasicParser: NSObject {
     private var labelMap = LabelMap() // [Line Number/Identifier at start of line : Index of Basic line]
     private var basicLines = [[BasicToken]]() // One line of Basic turns into one of the arrays in this 2D array of tokens.
     
-    private var programCounter = -1 // This corresponds to a line of code, and thus to an index of basicLines.
-    private var tokenIndex = 0
+    private var programCounter = -1 // This index of the line of code we're running - an index of basicLines. We start "before" the first line of our program.
+    private var tokenIndex = 0 // The index of the current token in the current line.
     private var currentToken : BasicToken { basicLines[programCounter][tokenIndex] }
     private var nextToken : BasicToken? { basicLines[programCounter].indices.contains(tokenIndex+1) ? basicLines[programCounter][tokenIndex + 1] : nil }
     
@@ -78,7 +77,7 @@ public class BasicParser: NSObject {
         if currentToken.type == expectedType { // If the current token's TokenType is what we expect...
             tokenIndex += 1 //Advance the token index.
         } else {
-            throw ParserError.unexpectedToken(expected: expectedType, actual: currentToken.type) // If we eat an unexpected token, throw an error.
+            throw ParserError.unexpectedToken(expected: expectedType, actual: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex) // If we eat an unexpected token, throw an error.
         }
     }
     
@@ -110,7 +109,7 @@ public class BasicParser: NSObject {
             try eat(.if)
             let lhs = try parseExpression()
             guard currentToken.isRelation else { // This center token (IF lhs relation rhs...) must be a relation token.
-                throw ParserError.badStatement(badTokenType: currentToken.type, reason: "Token must be a relation, but it's not.")
+                throw ParserError.badStatement(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex, reason: "Token must be a relation, but it's not.")
             }
             let operatorType = currentToken.type
             try eat(currentToken.type) // Heh, I guess this will always succeed.
@@ -152,14 +151,14 @@ public class BasicParser: NSObject {
             // If the next token is an identifier, then we should try to jump to it.
             if let nextToken = nextToken, nextToken.type == .identifier {
                 guard let target = labelMap[nextToken.rawValue] else {
-                    throw ParserError.unknownLabelError(desiredLabel: nextToken.rawValue)
+                    throw ParserError.unknownLabelError(desiredLabel: nextToken.rawValue, atLine: programCounter, tokenNumber: tokenIndex)
                 }
                 programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
             }
             else { // Otherwise, assume it's an expression that results in an Int.
                 let valueSymbol = try parseExpression()
                 guard let desiredLabel = valueSymbol.value as? Int, let target = labelMap[desiredLabel] else {
-                    throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
+                    throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value, atLine: programCounter, tokenNumber: tokenIndex)
                 }
                 programCounter = target - 1
             }
@@ -170,14 +169,14 @@ public class BasicParser: NSObject {
             // If the next token is an identifier, then we should try to jump to it.
             if currentToken.type == .identifier {
                 guard let target = labelMap[currentToken.rawValue] else {
-                    throw ParserError.unknownLabelError(desiredLabel: currentToken.rawValue)
+                    throw ParserError.unknownLabelError(desiredLabel: currentToken.rawValue, atLine: programCounter, tokenNumber: tokenIndex)
                 }
                 programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
             }
             else { // Otherwise, assume it's an expression that results in an Int.
                 let valueSymbol = try parseExpression()
                 guard let desiredLabel = valueSymbol.value as? Int, let target = labelMap[desiredLabel] else {
-                    throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value)
+                    throw ParserError.unknownLabelError(desiredLabel: valueSymbol.value, atLine: programCounter, tokenNumber: tokenIndex)
                 }
                 programCounter = target - 1 // - 1 because run() will increment the program counter for us afterward.
             }
@@ -188,7 +187,7 @@ public class BasicParser: NSObject {
             programCounter = target // We will end up at the line after the line that called the subroutine.
         case .rem: break //Just comments...
         case .end: programCounter = basicLines.count
-        default: throw ParserError.badStatement(badTokenType: currentToken.type)
+        default: throw ParserError.badStatement(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex)
         }
     }
     
@@ -259,7 +258,7 @@ public class BasicParser: NSObject {
             let varName = currentToken.rawValue
             try eat(.identifier)
             guard let symbol = symbolMap.get(symbolNamed: varName) else {
-                throw ParserError.uninitializedFactor(name: varName)
+                throw ParserError.uninitializedSymbol(name: varName, atLine: programCounter, tokenNumber: tokenIndex)
             }
             return symbol
         case .integer:
@@ -275,7 +274,7 @@ public class BasicParser: NSObject {
             try eat(.rightParenthesis)
             return expValue
         default:
-            throw ParserError.badFactor(badTokenType: currentToken.type)
+            throw ParserError.badFactor(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex)
         }
     }
     
