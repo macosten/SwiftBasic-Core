@@ -29,6 +29,8 @@ struct SymbolMap {
             case cannotModulo(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotCompare(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case downcastFailed(leftSymbol: Symbol, _ desiredLeftType: SymbolType, rightSymbol: Symbol, _ desiredRightType: SymbolType)
+            case integerOverflow(factor0: Symbol, operation: BasicToken.TokenType, factor1: Symbol)
+            case integerUnderflow(factor0: Symbol, operation: BasicToken.TokenType, factor1: Symbol)
             case generic(moreInfo: String)
         }
         
@@ -62,7 +64,9 @@ struct SymbolMap {
                 guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer)
                 }
-                return Symbol(type: .integer, value: lVal + rVal)
+                let (value, didOverflow) = lVal.addingReportingOverflow(rVal)
+                if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .plus, factor1: rhs) }
+                return Symbol(type: .integer, value: value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
@@ -97,7 +101,9 @@ struct SymbolMap {
                 guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer)
                 }
-                return Symbol(type: .integer, value: lVal - rVal)
+                let (value, didOverflow) = lVal.subtractingReportingOverflow(rVal)
+                if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .multiply, factor1: rhs) }
+                return Symbol(type: .integer, value: value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
@@ -132,7 +138,9 @@ struct SymbolMap {
                 guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer)
                 }
-                return Symbol(type: .integer, value: lVal * rVal)
+                let (value, didOverflow) = lVal.multipliedReportingOverflow(by: rVal)
+                if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .multiply, factor1: rhs) }
+                return Symbol(type: .integer, value: value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
@@ -168,7 +176,9 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer)
                 }
                 if rVal == 0 { throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs, reason: "Division by zero") }
-                return Symbol(type: .integer, value: lVal / rVal)
+                let (value, didOverflow) = lVal.dividedReportingOverflow(by: rVal)
+                if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .multiply, factor1: rhs) }
+                return Symbol(type: .integer, value: value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
@@ -207,7 +217,9 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer)
                 }
                 if rVal == 0 { throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs, reason: "Division (modulo) by zero") }
-                return Symbol(type: .integer, value: lVal % rVal)
+                let (value, didOverflow) = lVal.remainderReportingOverflow(dividingBy: rVal)
+                if didOverflow {  }
+                return Symbol(type: .integer, value: value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {

@@ -112,6 +112,11 @@ struct BasicToken {
         return type == .equalTo || type == .notEqualTo || type == .lessThan || type == .greaterThan || type == .lessThanOrEqualTo || type == .greaterThanOrEqualTo
     }
     
+    /// Returns true if this token is an assignment, like .assign or .plusAssign.
+    var isAssignment : Bool {
+        return type == .assign || type == .plusAssign || type == .minusAssign || type == .multiplyAssign || type == .divideAssign || type == .modAssign
+    }
+    
     // MARK: - Initializers
     init(_ inString: String) {
         rawValue = inString // Store a copy of the raw string input here.

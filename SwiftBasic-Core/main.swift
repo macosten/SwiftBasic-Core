@@ -29,7 +29,7 @@ try parser.loadCode(fromString: code2)
 try parser.run()
 
 // Demonstrates the use of GOSUB.
-let code3 = "PRINT \"Want to GOSUB? 0 for yes.\"\nINPUT A\nIF A == 0 THEN GOSUB FunkySubroutine\nEND\nFunkySubroutine PRINT \"🎉HELLO from the Subroutine!🎉\"\nRETURN"
+let code3 = "print \"Want to GOSUB? 0 for yes.\"\nINPUT variable\nIF variable == 0 THEN GOSUB FunkySubroutine🎉\nEND\nFunkySubroutine🎉 PRINT \"🎉HELLO from the Subroutine!🎉\"\nRETURN"
 try parser.loadCode(fromString: code3)
 try parser.run()
 
