@@ -15,7 +15,7 @@ class Console : BasicDelegate {
 }
 
 // Prints 10 copies of "HELLO WORLD"
-let code = "LET I = 0\n10 PRINT \"Hello, World!\"\nLET I = I + 1\nIF I < 10 THEN GOTO 10"
+let code = "LET I = 0\n10 PRINT \"Hello, World!\"\nI += 1\nIF I < 10 THEN GOTO 10"
 let console = Console()
 let parser = BasicParser()
 parser.delegate = console
@@ -33,4 +33,9 @@ let code3 = "print \"Want to GOSUB? 0 for yes.\"\nINPUT variable\nIF variable ==
 try parser.loadCode(fromString: code3)
 try parser.run()
 
+// Demonstrates an alternate assignment.
+let code4 = "a = 100\na /= 4\nprint a"
+try parser.loadCode(fromString: code4)
+try parser.run()
 
+// TODO - Make actual tests with XCTest.

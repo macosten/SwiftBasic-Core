@@ -95,8 +95,9 @@ struct BasicToken {
         
     }
     // MARK: - Variables
-    let type : TokenType
-    let rawValue : String
+    let type: TokenType
+    let rawValue: String // The raw string value of this token.
+    var isLabel: Bool = false // This will be set to true if the Parser determines that this token is a label at the beginning of a line. This lets us differentiate between line-starting identifiers that are labels and that are the first token of an assignment.
     var stringValue : String? {
         if type != .stringLiteral { return nil }
         //Return the raw value without the leading and trailing quotes.
@@ -146,8 +147,6 @@ struct BasicToken {
         case "*": type = .multiply
         case "/": type = .divide
         case "%": type = .mod
-        case "++": type = .increment
-        case "--": type = .decrement
             
         // Assignments
         case "=": type = .assign
