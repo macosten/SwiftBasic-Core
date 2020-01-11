@@ -17,4 +17,9 @@ protocol BasicDelegate {
     /// Return a string; the parser will determine what type the input is.
     func handleInput() -> String
     
+    /// This will be called when the Basic Parser attempts to CLEAR.
+    func handleClear()
+    
+    /// This will be called when the Basic Parser attempts to LIST the variables. The first element of each tuple is the variable's name, and the second is a string representation of its value.
+    func handleList(listOfSymbols: [(String, String)])
 }

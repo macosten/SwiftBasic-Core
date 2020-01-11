@@ -120,8 +120,17 @@ struct BasicToken {
     
     // MARK: - Initializers
     init(_ inString: String) {
-        rawValue = inString // Store a copy of the raw string input here.
         let compareString = inString.lowercased() //Lowercase the input so that tokens can be written however the user wants (ideally all UPPERCASE or all lowercase)
+        
+        // Special token cases/values go here, like pi -- these will have different raw values than the input string.
+        if compareString == "pi" || compareString == "π" {
+            rawValue = String(Double.pi)
+        } else { // Most tokens just have their raw value equal the input string.
+            rawValue = inString // Store a copy of the raw string input here.
+        }
+        
+        
+        
         
         // Attempt to match the string to a known keyword, separator, or operator.
         switch compareString {
@@ -137,7 +146,7 @@ struct BasicToken {
         case "return": type = .return
         case "clear": type = .clear
         case "list": type = .list
-        case "run": type = .run
+        // case "run": type = .run Files will generally be loaded from a string so RUN may not be necessary.
         case "end": type = .end
         case "rem": type = .rem
         
@@ -176,10 +185,17 @@ struct BasicToken {
         case "<<": type = .bitwiseShiftLeft
         case ">>": type = .bitwiseShiftRight // Arithmetic right shift
             
+        // Math
+        case "π": type = .double
+        case "pi": type = .double
+        // case "sin"
+        // case "cos" ... TODO: Trig functions
+            
+            
         // Others
         case ",": type = .comma
         case ";": type = .semicolon
-            
+        
         // Otherwise...
         default:
             //

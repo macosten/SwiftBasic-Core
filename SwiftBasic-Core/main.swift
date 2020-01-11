@@ -12,6 +12,10 @@ import Foundation
 class Console : BasicDelegate {
     func handlePrintStatement(stringToPrint: String) { print(stringToPrint) }
     func handleInput() -> String { readLine() ?? "" }
+    func handleClear() { print("\u{001B}[2J") } // This doesn't work in XCode's terminal, but should work in a normal one.
+    func handleList(listOfSymbols: [(String, String)]) {
+        for symbol in listOfSymbols { print("\(symbol.0) == \(symbol.1)") }
+    }
 }
 
 // Prints 10 copies of "HELLO WORLD"
@@ -24,7 +28,7 @@ try parser.loadCode(fromString: code)
 try parser.run()
 
 // Multiplies the 2 numbers you input, even if one is an integer and the other is a double/float
-let code2 = "PRINT \"Input two numbers and I'll multiply them!\"\nINPUT A, B\nPRINT A * B"
+let code2 = "PRINT \"Input two numbers and I'll multiply them!\"\nINPUT A, B\nPRINT A * B\nLIST"
 try parser.loadCode(fromString: code2)
 try parser.run()
 
@@ -34,7 +38,7 @@ try parser.loadCode(fromString: code3)
 try parser.run()
 
 // Demonstrates an alternate assignment.
-let code4 = "a = 100\na /= 4\nprint a"
+let code4 = "a = pi\na /= 4\nprint a\nclear"
 try parser.loadCode(fromString: code4)
 try parser.run()
 

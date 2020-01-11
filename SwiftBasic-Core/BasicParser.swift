@@ -85,6 +85,7 @@ public class BasicParser: NSObject {
         }
     }
     
+    /// Parse a line, which is an optional label and then a statement.
     private func parseLine() throws {
         let nextTokenIsAssignmentOperator = nextToken?.isAssignment ?? false
         if currentToken.type == .integer || (currentToken.type == .identifier && !nextTokenIsAssignmentOperator) { // Labels are either integers at the start of a line, or identifiers at the start of a line not followed by an assignment operator.
@@ -103,8 +104,9 @@ public class BasicParser: NSObject {
             try parseAssignment() // If this identifier isn't a label, it should be an assignment.
         case .print:
             try eat(.print)
+            guard let delegate = delegate else { throw ParserError.delegateNotSet }
             let expressionListString = try parseExpressionList()
-            delegate?.handlePrintStatement(stringToPrint: expressionListString) // Delegate must be set, or this does nothing (obviously)
+            delegate.handlePrintStatement(stringToPrint: expressionListString) // Delegate must be set, or this does nothing (obviously)
             try eat(.newline)
         case .if:
             var truthValue = false // If the conditional is true, we'll set this to true.
@@ -160,6 +162,12 @@ public class BasicParser: NSObject {
             guard let target = stack.pop() else { break } // Should I hrow an error? Stop execution? Do nothing? I'm not really sure. I'll have to go look at what other Basics do.
             try eat(.newline)
             programCounter = target // We will end up at the line after the line that called the subroutine.
+        case .clear:
+            guard let delegate = delegate else { throw ParserError.delegateNotSet }
+            delegate.handleClear()
+        case .list:
+            guard let delegate = delegate else { throw ParserError.delegateNotSet }
+            try delegate.handleList(listOfSymbols: symbolMap.listSymbolsAsArray())
         case .rem: break //Just comments... ignore 'em all.
         case .end: programCounter = basicLines.count // Set our program counter to the end of the token, effectively ending execution.
         default: throw ParserError.badStatement(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex)

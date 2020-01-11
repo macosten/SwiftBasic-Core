@@ -31,7 +31,7 @@ struct SymbolMap {
             case downcastFailed(leftSymbol: Symbol, _ desiredLeftType: SymbolType, rightSymbol: Symbol, _ desiredRightType: SymbolType)
             case integerOverflow(factor0: Symbol, operation: BasicToken.TokenType, factor1: Symbol)
             case integerUnderflow(factor0: Symbol, operation: BasicToken.TokenType, factor1: Symbol)
-            case generic(moreInfo: String)
+            case unknownError(moreInfo: String)
         }
         
         let type: SymbolType // The variable's type.
@@ -53,6 +53,14 @@ struct SymbolMap {
             }
             else { throw SymbolError.unsupportedType(value: string) }
         }
+        
+        ///Returns this symbol's value as a String.
+        func asString() throws -> String {
+            if type == .integer, let intValue = value as? Int { return String(intValue) }
+            else if type == .double, let doubleValue = value as? Double { return String(doubleValue) }
+            else { throw SymbolError.unknownError(moreInfo: "Failed to create string representation of symbol \(self) - this shouldn't happen.") }
+        }
+        
         
         // I really don't like how repetitive this code is, but I suppose this is the price I'm paying for trying to have Symbols support storing multiple types.
         
@@ -383,6 +391,18 @@ struct SymbolMap {
     
     // MARK: - Symbol Map
     private var map = [String : Symbol]() // [Variable Name : Corresponding Symbol]
+    
+    /// Returns the in-memory variables as an array of tuples. The first element of each tuple is the variable's name. The second element is the value, as a String. The array is sorted by the lexicographical order of the first element of each tuple.
+    func listSymbolsAsArray() throws -> [(String, String)] {
+        var result = [(String, String)]()
+        for pair in map {
+            let symbolStringKey = pair.0
+            let symbolStringValue = try pair.1.asString()
+            result.append((symbolStringKey, symbolStringValue))
+        }
+        result.sort { $0.0 < $1.0 }
+        return result
+    }
     
     func get(symbolNamed name: String) -> Symbol? { return map[name] }
     
