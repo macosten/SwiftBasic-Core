@@ -70,6 +70,18 @@ struct BasicToken {
         case bitwiseShiftLeft
         case bitwiseShiftRight
         
+        // MARK: - Math Functions
+        case sine
+        case cosine
+        case tangent
+        case arcsine
+        case arccosine
+        case arctangent
+        case secant
+        case cosecant
+        case cotangent
+        case power
+        
         // MARK: - Other Standard Tokens
         case leftParenthesis
         case rightParenthesis
@@ -78,20 +90,22 @@ struct BasicToken {
         case comma
         case leftSquareBracket
         case rightSquareBracket
-        case pointr // TODO -- find out what the non-abbreviated name for this is
         case quotationMarks
         case apostrophe
         case semicolon
         case period
+        
+        // MARK: - Data Types
         case integer
         case double
         case stringLiteral
-        case function
+        
         
         // MARK: - Newline
         case newline
         
         // case octothorpe
+        case function
         
     }
     // MARK: - Variables
@@ -188,8 +202,16 @@ struct BasicToken {
         // Math
         case "π": type = .double
         case "pi": type = .double
-        // case "sin"
-        // case "cos" ... TODO: Trig functions
+        case "**": type = .power
+        case "sin": type = .sine
+        case "cos": type = .cosine
+        case "tan": type = .tangent
+        case "arcsin": type = .arcsine
+        case "arccos": type = .arccosine
+        case "arctan": type = .arctangent
+        case "sec": type = .secant
+        case "csc": type = .cosecant
+        case "cot": type = .cotangent
             
             
         // Others
