@@ -27,6 +27,7 @@ struct SymbolMap {
             case cannotMultiply(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotDivide(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotModulo(lhs: Symbol, rhs: Symbol, reason: String? = nil)
+            case cannotExponentiate(base: Symbol, exponent: Symbol, reason: String? = nil)
             case cannotCompare(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case downcastFailed(leftSymbol: Symbol, _ desiredLeftType: SymbolType, rightSymbol: Symbol, _ desiredRightType: SymbolType)
             case integerOverflow(factor0: Symbol, operation: BasicToken.TokenType, factor1: Symbol)
@@ -256,6 +257,41 @@ struct SymbolMap {
             // If the function gets to this point, this is a problem -- the types we're trying to add can't be added (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs)
         }
+        
+        // MARK: - Power / Exponentiation
+        static func **(base: Symbol, exponent: Symbol) throws -> Symbol {
+           // For the same reason pow() isn't available for Integers, this function will always return a symbol with a Double. It gets pretty complicated pretty quickly otherwise.
+            if base.type == .integer && exponent.type == .integer {
+                guard let lVal = base.value as? Int, let rVal = exponent.value as? Int else {
+                    throw SymbolError.downcastFailed(leftSymbol: base, .integer, rightSymbol: exponent, .integer)
+                }
+                return Symbol(type: .double, value: lVal ** rVal)
+            }
+                
+            else if base.type == .double && exponent.type == .double {
+                guard let lVal = base.value as? Double, let rVal = exponent.value as? Double else {
+                    throw SymbolError.downcastFailed(leftSymbol: base, .double, rightSymbol: exponent, .double)
+                }
+                return Symbol(type: .double, value: lVal ** rVal)
+            }
+            // If the right side is an Int, cast it.
+            else if base.type == .double && exponent.type == .integer {
+                guard let lVal = base.value as? Double, let rVal = exponent.value as? Int else {
+                    throw SymbolError.downcastFailed(leftSymbol: base, .double, rightSymbol: exponent, .integer)
+                }
+                return Symbol(type: .double, value: lVal ** rVal)
+            }
+            // If the left side is an Int, cast it.
+            else if base.type == .integer && exponent.type == .double {
+                guard let lVal = base.value as? Int, let rVal = exponent.value as? Double else {
+                    throw SymbolError.downcastFailed(leftSymbol: base, .integer, rightSymbol: exponent, .double)
+                }
+                return Symbol(type: .double, value: lVal ** rVal)
+            }
+            // If the function gets to this point, then we're comparing types we shouldn't compare and we'll throw an error to complain about it.
+            throw SymbolError.cannotCompare(lhs: base, rhs: exponent)
+        }
+        
         
         // MARK: - Equality
         static func ==(lhs: Symbol, rhs: Symbol) throws -> Bool {

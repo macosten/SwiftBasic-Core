@@ -169,6 +169,7 @@ public class BasicParser: NSObject {
             guard let delegate = delegate else { throw ParserError.delegateNotSet }
             try delegate.handleList(listOfSymbols: symbolMap.listSymbolsAsArray())
         case .rem: break //Just comments... ignore 'em all.
+        case .newline: break //Ignore empty statements.
         case .end: programCounter = basicLines.count // Set our program counter to the end of the token, effectively ending execution.
         default: throw ParserError.badStatement(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex)
         }
@@ -268,20 +269,33 @@ public class BasicParser: NSObject {
     
     /// Parse a term.
     private func parseTerm() throws -> SymbolMap.Symbol {
-        let factorSymbol = try parseFactor()
+        let exponentialSymbol = try parseExponential()
         switch currentToken.type {
         case .multiply:
             try eat(.multiply)
-            let nextSymbol = try parseFactor()
-            return try factorSymbol * nextSymbol
+            let nextSymbol = try parseExponential()
+            return try exponentialSymbol * nextSymbol
         case .divide:
             try eat(.divide)
-            let nextSymbol = try parseFactor()
-            return try factorSymbol / nextSymbol
+            let nextSymbol = try parseExponential()
+            return try exponentialSymbol / nextSymbol
         case .mod:
             try eat(.mod)
+            let nextSymbol = try parseExponential()
+            return try exponentialSymbol % nextSymbol
+        default:
+            return exponentialSymbol
+        }
+    }
+    
+    /// Parse an exponential.
+    private func parseExponential() throws -> SymbolMap.Symbol { // A ** B
+        let factorSymbol = try parseFactor()
+        switch currentToken.type {
+        case .power:
+            try eat(.power)
             let nextSymbol = try parseFactor()
-            return try factorSymbol % nextSymbol
+            return try factorSymbol ** nextSymbol
         default:
             return factorSymbol
         }

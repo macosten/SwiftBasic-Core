@@ -11,7 +11,11 @@ import Foundation
 /// An example of a class that conforms to BasicDelegate; it handles console I/O for the BasicParser.
 class Console : BasicDelegate {
     func handlePrintStatement(stringToPrint: String) { print(stringToPrint) }
-    func handleInput() -> String { readLine() ?? "" }
+    func handleInput() -> String {
+        while true {
+            if let returnValue = readLine(), returnValue != "" { return returnValue }
+        }
+    }
     func handleClear() { print("\u{001B}[2J") } // This doesn't work in XCode's terminal, but should work in a normal one.
     func handleList(listOfSymbols: [(String, String)]) {
         for symbol in listOfSymbols { print("\(symbol.0) == \(symbol.1)") }
@@ -24,11 +28,23 @@ let console = Console()
 let parser = BasicParser()
 parser.delegate = console
 
-try parser.loadCode(fromString: code)
-try parser.run()
+//try parser.loadCode(fromString: code)
+//try parser.run()
 
-// Multiplies the 2 numbers you input, even if one is an integer and the other is a double/float
-let code2 = "PRINT \"Input two numbers and I'll multiply them!\"\nINPUT A, B\nPRINT A * B\nLIST"
+// Demonstrates the supported mathematical operators
+let code2 = """
+PRINT "Input two numbers and I'll perform all kinds of math on them!"
+INPUT A, B
+LIST
+PRINT A, " + ", B, " == ", A + B
+PRINT A, " - ", B, " == ", A - B
+PRINT A, " * ", B, " == ", A * B
+IF B == 0 THEN GOTO SkipDivision
+PRINT A, " / ", B, " == ", A / B
+PRINT A, " % ", B, " == ", A % B
+SkipDivision
+PRINT A, " ** ", B, " == ", A ** B
+"""
 try parser.loadCode(fromString: code2)
 try parser.run()
 

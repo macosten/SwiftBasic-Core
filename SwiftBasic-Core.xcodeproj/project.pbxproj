@@ -10,12 +10,13 @@
 		119127C323C18ED800DBC303 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127C223C18ED800DBC303 /* main.swift */; };
 		119127CC23C18F2E00DBC303 /* BasicLexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127CB23C18F2E00DBC303 /* BasicLexer.swift */; };
 		119127CE23C18FE000DBC303 /* BasicToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127CD23C18FE000DBC303 /* BasicToken.swift */; };
-		119127D023C1C0CA00DBC303 /* Character+isEmoji+isValidForToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127CF23C1C0CA00DBC303 /* Character+isEmoji+isValidForToken.swift */; };
+		119127D023C1C0CA00DBC303 /* CharacterExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127CF23C1C0CA00DBC303 /* CharacterExtensions.swift */; };
 		119127D223C3B3F700DBC303 /* BasicParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D123C3B3F700DBC303 /* BasicParser.swift */; };
 		119127D423C3B6B100DBC303 /* Stack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D323C3B6B100DBC303 /* Stack.swift */; };
 		119127D623C43F9C00DBC303 /* SymbolMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D523C43F9C00DBC303 /* SymbolMap.swift */; };
 		119127D823C5998600DBC303 /* BasicDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D723C5998600DBC303 /* BasicDelegate.swift */; };
 		119127DA23C6DC0D00DBC303 /* LabelMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127D923C6DC0D00DBC303 /* LabelMap.swift */; };
+		119127DC23CA6EED00DBC303 /* Exponentiation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119127DB23CA6EED00DBC303 /* Exponentiation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -35,12 +36,13 @@
 		119127C223C18ED800DBC303 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		119127CB23C18F2E00DBC303 /* BasicLexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicLexer.swift; sourceTree = "<group>"; };
 		119127CD23C18FE000DBC303 /* BasicToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicToken.swift; sourceTree = "<group>"; };
-		119127CF23C1C0CA00DBC303 /* Character+isEmoji+isValidForToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Character+isEmoji+isValidForToken.swift"; sourceTree = "<group>"; };
+		119127CF23C1C0CA00DBC303 /* CharacterExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterExtensions.swift; sourceTree = "<group>"; };
 		119127D123C3B3F700DBC303 /* BasicParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicParser.swift; sourceTree = "<group>"; };
 		119127D323C3B6B100DBC303 /* Stack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stack.swift; sourceTree = "<group>"; };
 		119127D523C43F9C00DBC303 /* SymbolMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolMap.swift; sourceTree = "<group>"; };
 		119127D723C5998600DBC303 /* BasicDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDelegate.swift; sourceTree = "<group>"; };
 		119127D923C6DC0D00DBC303 /* LabelMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelMap.swift; sourceTree = "<group>"; };
+		119127DB23CA6EED00DBC303 /* Exponentiation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exponentiation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,16 +76,33 @@
 			isa = PBXGroup;
 			children = (
 				119127C223C18ED800DBC303 /* main.swift */,
+				119127DD23CA742900DBC303 /* Data Structures */,
+				119127DE23CA74FF00DBC303 /* Extensions and Functions */,
 				119127CB23C18F2E00DBC303 /* BasicLexer.swift */,
 				119127CD23C18FE000DBC303 /* BasicToken.swift */,
 				119127D123C3B3F700DBC303 /* BasicParser.swift */,
 				119127D723C5998600DBC303 /* BasicDelegate.swift */,
+			);
+			path = "SwiftBasic-Core";
+			sourceTree = "<group>";
+		};
+		119127DD23CA742900DBC303 /* Data Structures */ = {
+			isa = PBXGroup;
+			children = (
 				119127D923C6DC0D00DBC303 /* LabelMap.swift */,
 				119127D323C3B6B100DBC303 /* Stack.swift */,
 				119127D523C43F9C00DBC303 /* SymbolMap.swift */,
-				119127CF23C1C0CA00DBC303 /* Character+isEmoji+isValidForToken.swift */,
 			);
-			path = "SwiftBasic-Core";
+			path = "Data Structures";
+			sourceTree = "<group>";
+		};
+		119127DE23CA74FF00DBC303 /* Extensions and Functions */ = {
+			isa = PBXGroup;
+			children = (
+				119127CF23C1C0CA00DBC303 /* CharacterExtensions.swift */,
+				119127DB23CA6EED00DBC303 /* Exponentiation.swift */,
+			);
+			path = "Extensions and Functions";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -145,11 +164,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				119127DA23C6DC0D00DBC303 /* LabelMap.swift in Sources */,
-				119127D023C1C0CA00DBC303 /* Character+isEmoji+isValidForToken.swift in Sources */,
+				119127D023C1C0CA00DBC303 /* CharacterExtensions.swift in Sources */,
 				119127D223C3B3F700DBC303 /* BasicParser.swift in Sources */,
 				119127D423C3B6B100DBC303 /* Stack.swift in Sources */,
 				119127D823C5998600DBC303 /* BasicDelegate.swift in Sources */,
 				119127C323C18ED800DBC303 /* main.swift in Sources */,
+				119127DC23CA6EED00DBC303 /* Exponentiation.swift in Sources */,
 				119127D623C43F9C00DBC303 /* SymbolMap.swift in Sources */,
 				119127CC23C18F2E00DBC303 /* BasicLexer.swift in Sources */,
 				119127CE23C18FE000DBC303 /* BasicToken.swift in Sources */,

@@ -95,7 +95,7 @@ class BasicLexer: NSObject {
                     i += 1
                 }
                 i += 1
-                continue // I didn't need to put this here since I also moved it to the end, but what happens when I forget that it's at the end for a reason?
+                // Keep this one at the end of the loop for sanity's sake.
             }
             
             i += 1 //Pretend we're a for loop and increment the index.
