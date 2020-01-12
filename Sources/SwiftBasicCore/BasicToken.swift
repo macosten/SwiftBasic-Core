@@ -12,8 +12,7 @@ struct BasicToken {
     //A type that represents a BASIC lexical token.
     
     enum TokenType {
-        // Basic token types from https://github.com/cvhariharan/Tiny-Basic/blob/master/tokens.h
-        
+
         case identifier
         
         // MARK: - Keywords

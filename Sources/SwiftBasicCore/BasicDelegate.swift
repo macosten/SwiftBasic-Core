@@ -9,7 +9,7 @@
 import Foundation
 
 /// A class that implements BasicDelegate will help a BasicParser certain tasks, like I/O.
-protocol BasicDelegate {
+public protocol BasicDelegate {
     
     /// This will be called when the Basic Parser attempts to PRINT a value.
     func handlePrintStatement(stringToPrint: String)

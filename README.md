@@ -6,7 +6,7 @@ A dialect of Basic written in Swift, mostly inspired by [cvharihan's Basic](http
 There are a few differences, though:
 
 * Variables can store Ints or Doubles.
-	* Any math done with a Double will evaluate to a Double.
+    * Any math done with a Double will evaluate to a Double.
 
 * Text labels are supported in addition to traditional integer labels.
 
