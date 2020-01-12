@@ -1,6 +1,8 @@
 # SwiftBasic-Core
 **This project is a work in progress (including this README).** I'm confident that this is still riddled with bugs, and I know there are more featues I'd like to implement. If you find a bug or have a feature suggestion, don't be afraid to file an issue.
 
+**For now, all rights are reserved.** Please don't use this in your projects just yet.
+
 A dialect of Basic written in Swift, mostly inspired by [cvharihan's Basic](https://github.com/cvhariharan/Tiny-Basic) and [Commodore BASIC](https://www.c64-wiki.com/wiki/BASIC).
 
 There are a few differences, though:
