@@ -79,7 +79,7 @@ class BasicLexer: NSObject {
             }
             
             // String Literals
-            if inputCharArray[i].isQuote {
+            if inputCharArray[i].isQuote { // Note that this will allow for string literals with mismatched quotes (i.e two left-quotes). This is ugly, but "fixing" it wouldn't be particularly easy...
                 tokenBuffer.append(inputCharArray[i])
                 while i < inputLine.count {
                     if inputCharArray[i+1] != "\"" {
