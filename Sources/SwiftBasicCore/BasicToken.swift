@@ -222,7 +222,7 @@ struct BasicToken {
             //
             if Int(inString) != nil { type = .integer }
             else if Double(inString) != nil {type = .double }
-            else if (inString.prefix(1) == "\"") && (inString.suffix(1) == "\"") { type = .stringLiteral }
+            else if inString.isQuotation { type = .stringLiteral }
             else { type = .identifier }
             
         }
