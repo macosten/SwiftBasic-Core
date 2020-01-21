@@ -34,9 +34,9 @@ public class BasicParser: NSObject {
     
     private var stack = Stack<Int>()
     
-    var delegate : BasicDelegate?
+    public var delegate : BasicDelegate?
     
-    func loadCode(fromString: String) throws {
+    public func loadCode(fromString: String) throws {
         // Reset the internal state of our data structures.
         symbolMap.removeAll()
         labelMap.removeAll()
@@ -328,7 +328,8 @@ public class BasicParser: NSObject {
         }
     }
     
-    func run() throws {
+    /// You may wish to run this on a background thread.
+    public func run() throws {
         while programCounter < basicLines.count-1 { // While we're not at the end of the program...
             tokenIndex = 0 // Reset the token index.
             programCounter += 1 // Increment the program counter (we do this here in case the line modifies the program counter; if we do it after parseLine(), we'd mess it up)

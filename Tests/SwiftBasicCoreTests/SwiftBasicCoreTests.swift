@@ -51,4 +51,6 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         XCTAssert(testConsole.output == expectedOutput)
     }
+    
+    
 }
