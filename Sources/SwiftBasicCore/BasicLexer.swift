@@ -79,8 +79,7 @@ class BasicLexer: NSObject {
             }
             
             // String Literals
-            // Really the only difference is that we check for a quote instead of for one of a few characters
-            if inputCharArray[i] == "\"" {
+            if inputCharArray[i].isQuote {
                 tokenBuffer.append(inputCharArray[i])
                 while i < inputLine.count {
                     if inputCharArray[i+1] != "\"" {

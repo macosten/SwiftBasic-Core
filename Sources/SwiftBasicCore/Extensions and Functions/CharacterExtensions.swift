@@ -41,9 +41,17 @@ extension Character {
     /// A Boolean value indicating if this is a character belonging to a mathematical, relational, or logical operator.
     var isOperator: Bool {
         if self.unicodeScalars.count != 1 { return false } // These do not consist of more than one Unicode scalar.
-        let separatorCharacterSet = CharacterSet(charactersIn: "+-*/%=<>!|^")
+        let operatorCharacterSet = CharacterSet(charactersIn: "+-*/%=<>!|^")
         guard let scalar = unicodeScalars.first else { return false }
-        return separatorCharacterSet.contains(scalar)
+        return operatorCharacterSet.contains(scalar)
+    }
+    
+    /// A Boolean value indicating if this is a quotation mark of some sort.
+    var isQuote: Bool {
+        if self.unicodeScalars.count != 1 { return false } // These do not consist of more than one Unicode scalar.
+        let quoteCharacterSet = CharacterSet(charactersIn: "\"“”«»「」")
+        guard let scalar = unicodeScalars.first else { return false }
+        return quoteCharacterSet.contains(scalar)
     }
     
 }
