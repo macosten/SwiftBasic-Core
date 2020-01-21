@@ -34,7 +34,7 @@ public class BasicParser: NSObject {
     
     private var stack = Stack<Int>()
     
-    public var delegate : BasicDelegate?
+    public weak var delegate : BasicDelegate?
     
     public func loadCode(fromString: String) throws {
         // Reset the internal state of our data structures.
