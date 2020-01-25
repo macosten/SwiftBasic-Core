@@ -5,9 +5,11 @@ final class SwiftBasicCoreTests: XCTestCase {
     
     static var allTests = [
         ("testArithmetic", testArithmetic),
+        ("testEndFunction", testEndFunction),
+        ("testEndKeyword", testEndKeyword)
     ]
     
-    /// Tests the arithmetic operators.
+    /// Tests the arithmetic operators. This also tests INPUT and PRINT.
     func testArithmetic() {
         let parser = BasicParser()
         let testConsole = TestConsole()
@@ -46,12 +48,10 @@ final class SwiftBasicCoreTests: XCTestCase {
         try! parser.loadCode(fromString: code)
         try! parser.run()
         
-        print("Expected:\n\"\(expectedOutput)\"")
-        print("Actual:\n\"\(testConsole.output)\"")
-        
         XCTAssert(testConsole.output == expectedOutput)
     }
     
+    /// Test BasicParser.endProgram(), meant to be called by another function on another thread.
     func testEndFunction(){
         let parser = BasicParser()
         let testConsole = TestConsole()
@@ -68,6 +68,7 @@ final class SwiftBasicCoreTests: XCTestCase {
         parser.endProgram()
     }
     
+    /// Test the END Basic keyword, which should terminate the program.
     func testEndKeyword(){
         let parser = BasicParser()
         let testConsole = TestConsole()

@@ -16,6 +16,15 @@ There are a few differences, though:
 
 * = is always the assignment operator, while == is always the equality operator.
 
-* Compound assignment operators are supported.
+* Compound assignment operators are supported (`+=`, `-=`, `*=`, `/=`, and `%=`).
+    * For example, `A %= 5` is equivalent to `A %= 5`.
+
+* There is an infix power operator (`**`) that always evaluates to a Double (for the sake of simplicity).
 
 * LIST lists the variables in memory (or, more accurately, passes the list to a delegate), not the program itself.
+
+Usage notes:
+
+* Some sort of care should be taken when considering programs that do not terminate on their own.
+    * In a GUI application, BasicParser.run() should be called on a background thread so that your main thread doesn't lock up if the program in memory is an infinite loop of some sort.
+
