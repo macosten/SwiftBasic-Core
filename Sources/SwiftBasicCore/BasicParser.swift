@@ -50,7 +50,14 @@ public class BasicParser: NSObject {
         // Find all the labels.
         try findLabels()
     }
-
+    
+    /// Ends the program.
+    public func endProgram() {
+        // This actually sets the program counter to look at the end of the program, which will then allow the loop in run() to end.
+        programCounter = basicLines.count - 1
+        tokenIndex = 0
+    }
+    
     /// Find all the labels in the code. A label is an Integer or an Identifier that may appear at the start of a line.
     private func findLabels() throws {
         for index in basicLines.indices {
@@ -170,7 +177,7 @@ public class BasicParser: NSObject {
             try delegate.handleList(listOfSymbols: symbolMap.listSymbolsAsArray())
         case .rem: break //Just comments... ignore 'em all.
         case .newline: break //Ignore empty statements.
-        case .end: programCounter = basicLines.count // Set our program counter to the end of the token, effectively ending execution.
+        case .end: endProgram()
         default: throw ParserError.badStatement(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex)
         }
     }

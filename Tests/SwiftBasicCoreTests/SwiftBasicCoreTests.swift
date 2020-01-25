@@ -52,5 +52,32 @@ final class SwiftBasicCoreTests: XCTestCase {
         XCTAssert(testConsole.output == expectedOutput)
     }
     
+    func testEndFunction(){
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        let code = """
+        10 GOTO 20
+        20 GOTO 10
+        """
+        try! parser.loadCode(fromString: code)
+        DispatchQueue.main.async {
+            try! parser.run()
+        }
+        usleep(1000)
+        parser.endProgram()
+    }
     
+    func testEndKeyword(){
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        let code = """
+        END
+        PRINT "This shouldn't be printed"
+        """
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        XCTAssert(testConsole.output == "")
+    }
 }
