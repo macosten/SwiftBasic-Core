@@ -30,8 +30,8 @@ struct SymbolMap {
             case cannotExponentiate(base: Symbol, exponent: Symbol, reason: String? = nil)
             case cannotCompare(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case downcastFailed(leftSymbol: Symbol, _ desiredLeftType: SymbolType, rightSymbol: Symbol, _ desiredRightType: SymbolType)
-            case integerOverflow(factor0: Symbol, operation: BasicToken.TokenType, factor1: Symbol)
-            case integerUnderflow(factor0: Symbol, operation: BasicToken.TokenType, factor1: Symbol)
+            case integerOverflow(factor0: Symbol, operation: TokenType, factor1: Symbol)
+            case integerUnderflow(factor0: Symbol, operation: TokenType, factor1: Symbol)
             case unknownError(moreInfo: String)
         }
         

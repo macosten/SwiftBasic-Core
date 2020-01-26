@@ -10,14 +10,22 @@ import Foundation
 
 public class BasicParser: NSObject {
     
-    enum ParserError: Error {
-        case unexpectedToken(expected: BasicToken.TokenType, actual: BasicToken.TokenType, atLine: Int, tokenNumber: Int) // If the expected and actual types of the current token differ, this error will be thrown.
-        case badFactor(badTokenType: BasicToken.TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if we failed to parse a factor. atLine and tokenNumber are zero-indexed.
-        case badStatement(badTokenType: BasicToken.TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if we failed to parse a statement. atLine and tokenNumber are zero-indexed.
+    public enum ParserError: Error {
+        case unexpectedToken(expected: TokenType, actual: TokenType, atLine: Int, tokenNumber: Int) // If the expected and actual types of the current token differ, this error will be thrown.
+        case badFactor(badTokenType: TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if we failed to parse a factor. atLine and tokenNumber are zero-indexed.
+        case badStatement(badTokenType: TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if we failed to parse a statement. atLine and tokenNumber are zero-indexed.
         case delegateNotSet // Thrown if self.delegate is nil, but we need a delegate to continue.
         case uninitializedSymbol(name: String, atLine: Int, tokenNumber: Int) // Thrown if the program attempts to access a symbol with no value.
         case unknownLabelError(desiredLabel: Any, atLine: Int, tokenNumber: Int) // Thrown if the program attempts to jump to a label that doesn't exist.
         case unknownError(inMethodNamed: String, reason: String) // Thrown if the parser enters state that it really shouldn't (a bug, in other words).
+        // Below here are errors that are essentially converted from SymbolErrors.
+        case unsupportedSymbolDataType(value: Any) // Thrown instead of SymbolError.unsupportedType(value: Any).
+        case badMath(failedOperation: String, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown as an umbrella for the "cannot____" errors other than cannotCompare. If the need arises, I might split this error into the different operations (cannotAdd, cannotSubtract, etc).
+        case badComparison(failedComparison: String, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown instead of cannotCompare.
+        case internalDowncastError(moreInfo: String) // Thrown instead of downcastFailed; not much is passed mostly because this isn't a problem with the user's program, but rather with SwiftBasic.
+        case integerOverOrUnderflow(failedOperation: String, atLine: Int, tokenNumber: Int) // Thrown instead of integerOverflow or integerUnderflow.
+        case unknownSymbolError(moreInfo: String) // Thrown instead of SymbolError.unknownError.
+        
     }
     
     private let lexer = BasicLexer()
@@ -84,7 +92,7 @@ public class BasicParser: NSObject {
         }
     }
     
-    private func eat(_ expectedType: BasicToken.TokenType) throws {
+    private func eat(_ expectedType: TokenType) throws {
         if currentToken.type == expectedType { // If the current token's TokenType is what we expect...
             tokenIndex += 1 //Advance the token index.
         } else {
@@ -340,7 +348,33 @@ public class BasicParser: NSObject {
         while programCounter < basicLines.count-1 { // While we're not at the end of the program...
             tokenIndex = 0 // Reset the token index.
             programCounter += 1 // Increment the program counter (we do this here in case the line modifies the program counter; if we do it after parseLine(), we'd mess it up)
-            try parseLine()
+            do {
+                try parseLine()
+            } catch SymbolMap.Symbol.SymbolError.unsupportedType(let value) { // Convert SymbolErrors to their equivalent ParserErrors.
+                throw ParserError.unsupportedSymbolDataType(value: value)
+            } catch SymbolMap.Symbol.SymbolError.cannotAdd(let lhs, let rhs, let reason) {
+                throw ParserError.badMath(failedOperation: "\(lhs.value) + \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
+            } catch SymbolMap.Symbol.SymbolError.cannotSubtract(let lhs, let rhs, let reason) {
+                throw ParserError.badMath(failedOperation: "\(lhs.value) - \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
+            } catch SymbolMap.Symbol.SymbolError.cannotMultiply(let lhs, let rhs, let reason) {
+                throw ParserError.badMath(failedOperation: "\(lhs.value) * \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
+            } catch SymbolMap.Symbol.SymbolError.cannotDivide(let lhs, let rhs, let reason) {
+                throw ParserError.badMath(failedOperation: "\(lhs.value) / \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
+            } catch SymbolMap.Symbol.SymbolError.cannotModulo(let lhs, let rhs, let reason) {
+                throw ParserError.badMath(failedOperation: "\(lhs.value) % \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
+            } catch SymbolMap.Symbol.SymbolError.cannotExponentiate(let lhs, let rhs, let reason) {
+                throw ParserError.badMath(failedOperation: "\(lhs.value) ** \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
+            } catch SymbolMap.Symbol.SymbolError.cannotCompare(let lhs, let rhs, let reason) {
+                throw ParserError.badComparison(failedComparison: "\(lhs.value) and \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
+            } catch SymbolMap.Symbol.SymbolError.downcastFailed(let leftSymbol, let desiredLeftType, let rightSymbol, let desiredRightType) {
+                throw ParserError.internalDowncastError(moreInfo: "An internal error ocurred (Downcasting \(leftSymbol.value) to \(desiredLeftType) and/or \(rightSymbol.value) to \(desiredRightType) failed). This shouldn't indicate a problem with your code; try running your program again.")
+            } catch SymbolMap.Symbol.SymbolError.integerOverflow(let factor0, let operation, let factor1) {
+                throw ParserError.integerOverOrUnderflow(failedOperation: "\(factor0) \(operation) \(factor1)", atLine: programCounter, tokenNumber: tokenIndex)
+            } catch SymbolMap.Symbol.SymbolError.unknownError(let moreInfo) {
+                throw ParserError.unknownSymbolError(moreInfo: moreInfo)
+            } catch { // Otherwise, just propagate the error.
+                throw error
+            }
         }
     }
     

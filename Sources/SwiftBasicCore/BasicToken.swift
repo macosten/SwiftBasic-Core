@@ -8,105 +8,108 @@
 
 import Foundation
 
+/// This enum helps keep track of the token types supported by Basic. If you're dealing with an instance of this type, it should be because it was exposed by a thrown error.
+public enum TokenType {
+
+    case identifier
+    
+    // MARK: - Keywords
+    case print
+    case `if`
+    case goto
+    case input
+    case `let`
+    case gosub
+    case `return`
+    case clear
+    case list
+    case run
+    case end
+    case then
+    case rem
+    
+    // case `break`
+    
+    // MARK: - Operators
+    case plus
+    case minus
+    case multiply
+    case divide
+    case mod
+    case increment
+    case decrement
+    
+    // MARK: - Assignment
+    case assign
+    case plusAssign
+    case minusAssign
+    case multiplyAssign
+    case divideAssign
+    case modAssign
+    
+    // MARK: - Relations
+    case equalTo
+    case greaterThan
+    case lessThan
+    case notEqualTo
+    case greaterThanOrEqualTo
+    case lessThanOrEqualTo
+    
+    // MARK: - Logical
+    case logicalAnd
+    case logicalOr
+    case logicalNot
+    
+    // MARK: - Bitwise Operations
+    case bitwiseAnd
+    case bitwiseOr
+    case bitwiseXor
+    case bitwiseShiftLeft
+    case bitwiseShiftRight
+    
+    // MARK: - Math Functions
+    case sine
+    case cosine
+    case tangent
+    case arcsine
+    case arccosine
+    case arctangent
+    case secant
+    case cosecant
+    case cotangent
+    case power
+    
+    // MARK: - Other Standard Tokens
+    case leftParenthesis
+    case rightParenthesis
+    case leftCurlyBracket
+    case rightCurlyBracket
+    case comma
+    case leftSquareBracket
+    case rightSquareBracket
+    case quotationMarks
+    case apostrophe
+    case semicolon
+    case period
+    
+    // MARK: - Data Types
+    case integer
+    case double
+    case stringLiteral
+    
+    
+    // MARK: - Newline
+    case newline
+    
+    // case octothorpe
+    case function
+    
+}
+
 struct BasicToken {
     //A type that represents a BASIC lexical token.
     
-    enum TokenType {
-
-        case identifier
-        
-        // MARK: - Keywords
-        case print
-        case `if`
-        case goto
-        case input
-        case `let`
-        case gosub
-        case `return`
-        case clear
-        case list
-        case run
-        case end
-        case then
-        case rem
-        
-        // case `break`
-        
-        // MARK: - Operators
-        case plus
-        case minus
-        case multiply
-        case divide
-        case mod
-        case increment
-        case decrement
-        
-        // MARK: - Assignment
-        case assign
-        case plusAssign
-        case minusAssign
-        case multiplyAssign
-        case divideAssign
-        case modAssign
-        
-        // MARK: - Relations
-        case equalTo
-        case greaterThan
-        case lessThan
-        case notEqualTo
-        case greaterThanOrEqualTo
-        case lessThanOrEqualTo
-        
-        // MARK: - Logical
-        case logicalAnd
-        case logicalOr
-        case logicalNot
-        
-        // MARK: - Bitwise Operations
-        case bitwiseAnd
-        case bitwiseOr
-        case bitwiseXor
-        case bitwiseShiftLeft
-        case bitwiseShiftRight
-        
-        // MARK: - Math Functions
-        case sine
-        case cosine
-        case tangent
-        case arcsine
-        case arccosine
-        case arctangent
-        case secant
-        case cosecant
-        case cotangent
-        case power
-        
-        // MARK: - Other Standard Tokens
-        case leftParenthesis
-        case rightParenthesis
-        case leftCurlyBracket
-        case rightCurlyBracket
-        case comma
-        case leftSquareBracket
-        case rightSquareBracket
-        case quotationMarks
-        case apostrophe
-        case semicolon
-        case period
-        
-        // MARK: - Data Types
-        case integer
-        case double
-        case stringLiteral
-        
-        
-        // MARK: - Newline
-        case newline
-        
-        // case octothorpe
-        case function
-        
-    }
+    
     // MARK: - Variables
     let type: TokenType
     let rawValue: String // The raw string value of this token.
