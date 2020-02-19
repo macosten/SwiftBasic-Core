@@ -81,4 +81,22 @@ final class SwiftBasicCoreTests: XCTestCase {
         try! parser.run()
         XCTAssert(testConsole.output == "")
     }
+    
+    /// Test the assignment of doubles in Basic.
+    func testAssigningDoubles() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        let code = """
+        LET I = .123
+        LET J = 0.234
+        LET K = 456.789
+        PRINT I, " ", J, " ", K
+        """
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+        XCTAssert(testConsole.output == "0.123 0.234 456.789\n")
+    }
+    
 }

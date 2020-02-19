@@ -27,7 +27,7 @@ extension Character {
     
     /// A Boolean value indicating if this is a valid character for a code token: Letters, Numbers, Emoji, and Underscores. TODO - Rename this.
     var isValidForGeneralToken: Bool {
-        return isLetter || isNumber || isEmoji || self == "_"
+        return isLetter || isNumber || isEmoji || self == "_" || self == "."
     }
     
     /// A Boolean value indicating if this is a valid separator character - a semicolon, comma, or a bracket of some sort.

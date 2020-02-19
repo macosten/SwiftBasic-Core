@@ -90,7 +90,6 @@ public enum TokenType {
     case quotationMarks
     case apostrophe
     case semicolon
-    case period
     
     // MARK: - Data Types
     case integer
