@@ -16,8 +16,7 @@ struct SymbolMap {
         enum SymbolType { // Keeps track of what kind of value this symbol holds.
             case integer
             case double
-            // Future: support for strings in symbols?
-            //case string
+            case string
         } // Why not just use "if (symbol) is Type"? If I did that, then the switch statements wouldn't complain about being exhaustive if I decide to add another symbol type, and it'd be tougher to update...
         
         enum SymbolError : Error { // If we try to do something with two symbols that we shouldn't, an error of this type should be thrown.
@@ -51,14 +50,18 @@ struct SymbolMap {
             } else if let doubleValue = Double(string){
                 self.type = .double
                 self.value = doubleValue
+            } else {
+                self.type = .string
+                self.value = string
             }
-            else { throw SymbolError.unsupportedType(value: string) }
+            // else { throw SymbolError.unsupportedType(value: string) }
         }
         
         ///Returns this symbol's value as a String.
         func asString() throws -> String {
             if type == .integer, let intValue = value as? Int { return String(intValue) }
             else if type == .double, let doubleValue = value as? Double { return String(doubleValue) }
+            else if type == .string, let stringValue = value as? String { return stringValue }
             else { throw SymbolError.unknownError(moreInfo: "Failed to create string representation of symbol \(self) - this shouldn't happen.") }
         }
         

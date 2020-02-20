@@ -256,6 +256,7 @@ public class BasicParser: NSObject {
             switch expressionSymbol.type {
             case .double: result = String(expressionSymbol.value as! Double)
             case .integer: result = String(expressionSymbol.value as! Int)
+            case .string: result = String(expressionSymbol.value as! String)
             }
         }
         if currentToken.type == .comma { // Continue down the list if there's a comma.

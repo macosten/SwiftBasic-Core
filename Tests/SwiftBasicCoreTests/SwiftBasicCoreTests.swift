@@ -6,7 +6,8 @@ final class SwiftBasicCoreTests: XCTestCase {
     static var allTests = [
         ("testArithmetic", testArithmetic),
         ("testEndFunction", testEndFunction),
-        ("testEndKeyword", testEndKeyword)
+        ("testEndKeyword", testEndKeyword),
+        ("testAssigningDoubles", testAssigningDoubles)
     ]
     
     /// Tests the arithmetic operators. This also tests INPUT and PRINT.
@@ -82,21 +83,42 @@ final class SwiftBasicCoreTests: XCTestCase {
         XCTAssert(testConsole.output == "")
     }
     
-    /// Test the assignment of doubles in Basic.
+    /// Test the assignment of doubles (to symbols) in Basic.
     func testAssigningDoubles() {
         let parser = BasicParser()
         let testConsole = TestConsole()
         parser.delegate = testConsole
         let code = """
-        LET I = .123
-        LET J = 0.234
-        LET K = 456.789
+        I = .123
+        J = 0.234
+        K = 456.789
         PRINT I, " ", J, " ", K
         """
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        print(testConsole.output)
+        // print(testConsole.output)
         XCTAssert(testConsole.output == "0.123 0.234 456.789\n")
+    }
+    
+    /// Test the assignment of strings (to symbols) in Basic.
+    func testAssigningStrings() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let myName = "Zac"
+        testConsole.inputBuffer = [myName]
+        
+        let code = """
+        PRINT "What's your name?"
+        INPUT A
+        PRINT "Hello, ", A, "!"
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+        XCTAssert(testConsole.output == "What's your name?\nHello, \(myName)!\n")
     }
     
 }
