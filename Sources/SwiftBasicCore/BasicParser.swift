@@ -335,6 +335,10 @@ public class BasicParser: NSObject {
             let doubleValue = currentToken.doubleValue!
             try eat(.double)
             return SymbolMap.Symbol(type: .double, value: doubleValue)
+        case .stringLiteral: // This might just be a string literal, in which case we should just return a symbol with it.
+            let stringValue = currentToken.stringValue!
+            try eat(.stringLiteral)
+            return SymbolMap.Symbol(type: .string, value: stringValue)
         case .leftParenthesis: // Assume this is the start of a nested expression; evaluate that expression and return a Symbol with its value.
             let expValue = try parseExpression()
             try eat(.rightParenthesis)

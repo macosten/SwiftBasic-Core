@@ -113,12 +113,14 @@ final class SwiftBasicCoreTests: XCTestCase {
         PRINT "What's your name?"
         INPUT A
         PRINT "Hello, ", A, "!"
+        LET stringLiteral = "Welcome to SwiftBasicCore!"
+        PRINT stringLiteral
         """
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
         print(testConsole.output)
-        XCTAssert(testConsole.output == "What's your name?\nHello, \(myName)!\n")
+        XCTAssert(testConsole.output == "What's your name?\nHello, \(myName)!\nWelcome to SwiftBasicCore!\n")
     }
     
 }
