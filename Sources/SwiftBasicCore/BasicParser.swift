@@ -24,6 +24,7 @@ public class BasicParser: NSObject {
         case badComparison(failedComparison: String, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown instead of cannotCompare.
         case internalDowncastError(moreInfo: String) // Thrown instead of downcastFailed; not much is passed mostly because this isn't a problem with the user's program, but rather with SwiftBasic.
         case integerOverOrUnderflow(failedOperation: String, atLine: Int, tokenNumber: Int) // Thrown instead of integerOverflow or integerUnderflow.
+        case programEndedManually // Thrown when .eat() is called after the program is ended with endProgram.
         case unknownSymbolError(moreInfo: String) // Thrown instead of SymbolError.unknownError.
         
     }
@@ -39,6 +40,8 @@ public class BasicParser: NSObject {
     private var tokenIndex = 0 // The index of the current token in the current line.
     private var currentToken : BasicToken { basicLines[programCounter][tokenIndex] }
     private var nextToken : BasicToken? { basicLines[programCounter].indices.contains(tokenIndex+1) ? basicLines[programCounter][tokenIndex + 1] : nil }
+    
+    private var running : Bool = true // This will be set to false
     
     private var stack = Stack<Int>()
     
@@ -64,6 +67,7 @@ public class BasicParser: NSObject {
         // This actually sets the program counter to look at the end of the program, which will then allow the loop in run() to end.
         programCounter = basicLines.count - 1
         tokenIndex = 0
+        running = false // Just in case this was called by another object -- the Basic runtime will now know that it was supposed to stop.
     }
     
     /// Find all the labels in the code. A label is an Integer or an Identifier that may appear at the start of a line.
@@ -93,6 +97,7 @@ public class BasicParser: NSObject {
     }
     
     private func eat(_ expectedType: TokenType) throws {
+        if !running { throw ParserError.programEndedManually }
         if currentToken.type == expectedType { // If the current token's TokenType is what we expect...
             tokenIndex += 1 //Advance the token index.
         } else {
@@ -350,6 +355,7 @@ public class BasicParser: NSObject {
     
     /// You may wish to run this on a background thread.
     public func run() throws {
+        running = true
         while programCounter < basicLines.count-1 { // While we're not at the end of the program...
             tokenIndex = 0 // Reset the token index.
             programCounter += 1 // Increment the program counter (we do this here in case the line modifies the program counter; if we do it after parseLine(), we'd mess it up)
