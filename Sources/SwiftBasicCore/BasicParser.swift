@@ -41,7 +41,7 @@ public class BasicParser: NSObject {
     private var currentToken : BasicToken { basicLines[programCounter][tokenIndex] }
     private var nextToken : BasicToken? { basicLines[programCounter].indices.contains(tokenIndex+1) ? basicLines[programCounter][tokenIndex + 1] : nil }
     
-    private var running : Bool = true // This will be set to false
+    public private(set) var running : Bool = false // True when a program is running, false otherwise...
     
     private var stack = Stack<Int>()
     
@@ -65,9 +65,9 @@ public class BasicParser: NSObject {
     /// Ends the program.
     public func endProgram() {
         // This actually sets the program counter to look at the end of the program, which will then allow the loop in run() to end.
+        running = false // Just in case this was called by another object -- the Basic runtime will now know that it was supposed to stop.
         programCounter = basicLines.count - 1
         tokenIndex = 0
-        running = false // Just in case this was called by another object -- the Basic runtime will now know that it was supposed to stop.
     }
     
     /// Find all the labels in the code. A label is an Integer or an Identifier that may appear at the start of a line.
@@ -362,31 +362,44 @@ public class BasicParser: NSObject {
             do {
                 try parseLine()
             } catch SymbolMap.Symbol.SymbolError.unsupportedType(let value) { // Convert SymbolErrors to their equivalent ParserErrors.
+                running = false
                 throw ParserError.unsupportedSymbolDataType(value: value)
             } catch SymbolMap.Symbol.SymbolError.cannotAdd(let lhs, let rhs, let reason) {
+                running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) + \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
             } catch SymbolMap.Symbol.SymbolError.cannotSubtract(let lhs, let rhs, let reason) {
+                running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) - \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
             } catch SymbolMap.Symbol.SymbolError.cannotMultiply(let lhs, let rhs, let reason) {
+                running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) * \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
             } catch SymbolMap.Symbol.SymbolError.cannotDivide(let lhs, let rhs, let reason) {
+                running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) / \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
             } catch SymbolMap.Symbol.SymbolError.cannotModulo(let lhs, let rhs, let reason) {
+                running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) % \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
             } catch SymbolMap.Symbol.SymbolError.cannotExponentiate(let lhs, let rhs, let reason) {
+                running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) ** \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
             } catch SymbolMap.Symbol.SymbolError.cannotCompare(let lhs, let rhs, let reason) {
+                running = false
                 throw ParserError.badComparison(failedComparison: "\(lhs.value) and \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
             } catch SymbolMap.Symbol.SymbolError.downcastFailed(let leftSymbol, let desiredLeftType, let rightSymbol, let desiredRightType) {
+                running = false
                 throw ParserError.internalDowncastError(moreInfo: "An internal error ocurred (Downcasting \(leftSymbol.value) to \(desiredLeftType) and/or \(rightSymbol.value) to \(desiredRightType) failed). This shouldn't indicate a problem with your code; try running your program again.")
             } catch SymbolMap.Symbol.SymbolError.integerOverflow(let factor0, let operation, let factor1) {
+                running = false
                 throw ParserError.integerOverOrUnderflow(failedOperation: "\(factor0) \(operation) \(factor1)", atLine: programCounter, tokenNumber: tokenIndex)
             } catch SymbolMap.Symbol.SymbolError.unknownError(let moreInfo) {
+                running = false
                 throw ParserError.unknownSymbolError(moreInfo: moreInfo)
             } catch { // Otherwise, just propagate the error.
+                running = false
                 throw error
             }
         }
+        running = false
     }
     
 }
