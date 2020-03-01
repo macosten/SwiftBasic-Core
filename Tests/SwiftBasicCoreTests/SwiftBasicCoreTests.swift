@@ -140,7 +140,6 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        print(testConsole.output)
         XCTAssert(testConsole.output == "We like 2 eat 🍪🍪🍪🍪🍪 4.0 ever!\n")
         
         testConsole.handleClear()
@@ -152,12 +151,13 @@ final class SwiftBasicCoreTests: XCTestCase {
         dessert = 5
         dessert *= "🎂"
         print dessert
+        print "🧁" * 5
         """
         
         try! parser.loadCode(fromString: code2)
         try! parser.run()
-        XCTAssert(testConsole.output == "🍪🍪🍪🍪🍪\n🎂🎂🎂🎂🎂\n")
+        XCTAssert(testConsole.output == "🍪🍪🍪🍪🍪\n🎂🎂🎂🎂🎂\n🧁🧁🧁🧁🧁\n")
         
     }
-    
+
 }

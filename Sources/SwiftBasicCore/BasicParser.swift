@@ -253,16 +253,12 @@ public class BasicParser: NSObject {
     /// Parses an expression list, probably because we're trying to figure out what string should be PRINT-ed.
     private func parseExpressionList() throws -> String {
         var result = ""
-        if currentToken.type == .stringLiteral { // Trying to print a string literal? Make it the result.
-            result = currentToken.stringValue!
-            try eat(.stringLiteral)
-        } else { // Assume it's an expression. Figure out the string that corresponds to the value of the expression.
-            let expressionSymbol = try parseExpression()
-            switch expressionSymbol.type {
-            case .double: result = String(expressionSymbol.value as! Double)
-            case .integer: result = String(expressionSymbol.value as! Int)
-            case .string: result = String(expressionSymbol.value as! String)
-            }
+        // Assume it's an expression. Figure out the string that corresponds to the value of the expression.
+        let expressionSymbol = try parseExpression()
+        switch expressionSymbol.type {
+        case .double: result = String(expressionSymbol.value as! Double)
+        case .integer: result = String(expressionSymbol.value as! Int)
+        case .string: result = String(expressionSymbol.value as! String)
         }
         if currentToken.type == .comma { // Continue down the list if there's a comma.
             try eat(.comma)
