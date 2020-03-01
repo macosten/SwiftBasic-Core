@@ -7,7 +7,8 @@ final class SwiftBasicCoreTests: XCTestCase {
         ("testArithmetic", testArithmetic),
         ("testEndFunction", testEndFunction),
         ("testEndKeyword", testEndKeyword),
-        ("testAssigningDoubles", testAssigningDoubles)
+        ("testAssigningDoubles", testAssigningDoubles),
+        ("testStringOperators", testStringOperators)
     ]
     
     /// Tests the arithmetic operators. This also tests INPUT and PRINT.
@@ -121,6 +122,42 @@ final class SwiftBasicCoreTests: XCTestCase {
         try! parser.run()
         print(testConsole.output)
         XCTAssert(testConsole.output == "What's your name?\nHello, \(myName)!\nWelcome to SwiftBasicCore!\n")
+    }
+    
+    /// Tests the string operators (plus and multiply) in Basic.
+    func testStringOperators() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        string = "We like " + 2
+        string += " eat "
+        dessert = "🍪" * 5
+        string += dessert
+        print string + " ", 4.0 + " ever!"
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+        XCTAssert(testConsole.output == "We like 2 eat 🍪🍪🍪🍪🍪 4.0 ever!\n")
+        
+        testConsole.handleClear()
+        
+        let code2 = """
+        dessert = "🍪"
+        dessert *= 5
+        print dessert
+        dessert = 5
+        dessert *= "🎂"
+        print dessert
+        """
+        
+        try! parser.loadCode(fromString: code2)
+        try! parser.run()
+        XCTAssert(testConsole.output == "🍪🍪🍪🍪🍪\n🎂🎂🎂🎂🎂\n")
+        
     }
     
 }

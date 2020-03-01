@@ -101,7 +101,15 @@ struct SymbolMap {
                 }
                 return Symbol(type: .double, value: Double(lVal) + rVal)
             }
-            // If the function gets to this point, this is a problem -- the types we're trying to add can't be added (this may not always be reachable, but symbols might be expanded to add more data types in the future).
+            // If either side is a string, then treat this as a string concatenation.
+            else if lhs.type == .string || rhs.type == .string {
+                guard let lVal = try? lhs.asString(), let rVal = try? rhs.asString() else {
+                    throw SymbolError.downcastFailed(leftSymbol: lhs, .string, rightSymbol: rhs, .string)
+                }
+                return Symbol(type: .string, value: lVal + rVal)
+            }
+            
+            // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotAdd(lhs: lhs, rhs: rhs)
         }
         
@@ -138,7 +146,7 @@ struct SymbolMap {
                 }
                 return Symbol(type: .double, value: Double(lVal) - rVal)
             }
-            // If the function gets to this point, this is a problem -- the types we're trying to add can't be added (this may not always be reachable, but symbols might be expanded to add more data types in the future).
+            // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotSubtract(lhs: lhs, rhs: rhs)
         }
         
@@ -175,7 +183,26 @@ struct SymbolMap {
                 }
                 return Symbol(type: .double, value: Double(lVal) * rVal)
             }
-            // If the function gets to this point, this is a problem -- the types we're trying to add can't be added (this may not always be reachable, but symbols might be expanded to add more data types in the future).
+            // If the left side is a string and the right side is an integer, then return the string repeated a number of times equal to the right side's value.
+            else if lhs.type == .string && rhs.type == .integer {
+                guard let lVal = lhs.value as? String, let rVal = rhs.value as? Int else {
+                    throw SymbolError.downcastFailed(leftSymbol: lhs, .string, rightSymbol: rhs, .integer)
+                }
+                // If rVal is negative, we can't multiply.
+                if rVal < 0 { throw SymbolError.cannotMultiply(lhs: lhs, rhs: rhs) }
+                return Symbol(type: .string, value: String(repeating: lVal, count: rVal))
+            }
+            // If the right side is a string and the left side is an integer, then return the string repeated a number of times equal to the left side's value.
+            else if lhs.type == .integer && rhs.type == .string {
+                guard let lVal = lhs.value as? Int, let rVal = rhs.value as? String else {
+                    throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .string)
+                }
+                // If lVal is negative, we can't multiply.
+                if lVal < 0 { throw SymbolError.cannotMultiply(lhs: lhs, rhs: rhs) }
+                return Symbol(type: .string, value: String(repeating: rVal, count: lVal))
+            }
+            
+            // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotMultiply(lhs: lhs, rhs: rhs)
         }
         
@@ -216,7 +243,7 @@ struct SymbolMap {
                 if rVal == 0.0 { throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs, reason: "Division by zero") }
                 return Symbol(type: .double, value: Double(lVal) / rVal)
             }
-            // If the function gets to this point, this is a problem -- the types we're trying to add can't be added (this may not always be reachable, but symbols might be expanded to add more data types in the future).
+            // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs)
         }
         
@@ -257,7 +284,7 @@ struct SymbolMap {
                 if rVal == 0.0 { throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs, reason: "Division by zero") }
                 return Symbol(type: .double, value: Double(lVal).truncatingRemainder(dividingBy: rVal))
             }
-            // If the function gets to this point, this is a problem -- the types we're trying to add can't be added (this may not always be reachable, but symbols might be expanded to add more data types in the future).
+            // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs)
         }
         
@@ -291,8 +318,8 @@ struct SymbolMap {
                 }
                 return Symbol(type: .double, value: lVal ** rVal)
             }
-            // If the function gets to this point, then we're comparing types we shouldn't compare and we'll throw an error to complain about it.
-            throw SymbolError.cannotCompare(lhs: base, rhs: exponent)
+            // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
+            throw SymbolError.cannotExponentiate(base: base, exponent: exponent)
         }
         
         
@@ -326,6 +353,13 @@ struct SymbolMap {
                 }
                 return Double(lVal) == rVal
             }
+            // If both sides are strings, compare them.
+            else if lhs.type == .string && rhs.type == .string {
+                guard let lVal = lhs.value as? String, let rVal = rhs.value as? String else {
+                    throw SymbolError.downcastFailed(leftSymbol: lhs, .string, rightSymbol: rhs, .string)
+                }
+                return lVal == rVal
+            }
             // If the function gets to this point, then we're comparing types we shouldn't compare and we'll throw an error to complain about it.
             throw SymbolError.cannotCompare(lhs: lhs, rhs: rhs)
        }
@@ -356,7 +390,14 @@ struct SymbolMap {
                 }
                 return Double(lVal) != rVal
             }
-             throw SymbolError.cannotCompare(lhs: lhs, rhs: rhs)
+            // If both sides are strings, compare them.
+            else if lhs.type == .string && rhs.type == .string {
+                guard let lVal = lhs.value as? String, let rVal = rhs.value as? String else {
+                    throw SymbolError.downcastFailed(leftSymbol: lhs, .string, rightSymbol: rhs, .string)
+                }
+                return lVal != rVal
+            }
+            throw SymbolError.cannotCompare(lhs: lhs, rhs: rhs)
         }
         
         // MARK: - Less Than
