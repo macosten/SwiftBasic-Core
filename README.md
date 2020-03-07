@@ -24,6 +24,8 @@ There are a few differences, though:
 
 * LIST lists the variables in memory (or, more accurately, passes the list to a delegate), not the program itself.
 
+* Arrays are not supported - instead, there are dictionaries (because swift makes using them easier). You can use them just as you would an array, if you want.
+
 Usage notes:
 
 * Some sort of care should be taken when considering programs that do not terminate on their own.

@@ -8,7 +8,8 @@ final class SwiftBasicCoreTests: XCTestCase {
         ("testEndFunction", testEndFunction),
         ("testEndKeyword", testEndKeyword),
         ("testAssigningDoubles", testAssigningDoubles),
-        ("testStringOperators", testStringOperators)
+        ("testStringOperators", testStringOperators),
+        ("testDictionary", testDictionary)
     ]
     
     /// Tests the arithmetic operators. This also tests INPUT and PRINT.
@@ -160,4 +161,45 @@ final class SwiftBasicCoreTests: XCTestCase {
         
     }
 
+    /// Tests the functionality of dictionaries.
+    func testDictionary() {
+        typealias Symbol = SymbolMap.Symbol
+        
+        let lexer = BasicLexer()
+        
+        print(lexer.getTokensForFileContents(input: "a[0]"))
+        
+        
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let random = Int.random(in: 0...1)
+        
+        let code = """
+        let symbol = \(random)
+        b[0] = "Woah"
+        b[1] = "These aren't quite arrays..."
+        b["🎂"] = b[1]
+        b["3 * 3"] = 3
+        b["3 * 3"] *= 3
+        b["3 * 3"] += 50
+        b["3 * 3"] -= 50
+        b["3 * 3"] /= 1
+        b["3 * 3"] %= 10
+        b["0"] = b
+        b[symbol] = "🍪"
+        print b
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+        
+        let dict = parser.symbolMap.get(symbolNamed: "b")!.value as! SymbolMap.SymbolDictionary
+        XCTAssert(try dict[Symbol(type: .integer, value: random)]!.asString() == "🍪")
+        XCTAssert(dict[Symbol(type: .string, value: "3 * 3")]!.value as! Int == 9)
+        
+    }
+    
 }

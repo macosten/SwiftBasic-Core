@@ -26,6 +26,8 @@ public enum TokenType {
     case run
     case end
     case then
+    case dict // dictionary declaration
+    
     case rem
     
     // case `break`
@@ -161,9 +163,11 @@ struct BasicToken {
         case "return": type = .return
         case "clear": type = .clear
         case "list": type = .list
-        // case "run": type = .run Files will generally be loaded from a string so RUN may not be necessary.
         case "end": type = .end
+        case "dict": type = .dict // Dictionary declaration - is always the value of an empty dictionary.
+            
         case "rem": type = .rem
+        
         
         // Operators
         case "+": type = .plus
@@ -215,10 +219,16 @@ struct BasicToken {
         case "cot": type = .cotangent
             
             
-        // Others
+        // Separators
         case ",": type = .comma
         case ";": type = .semicolon
-        
+        case "[": type = .leftSquareBracket
+        case "]": type = .rightSquareBracket
+        case "(": type = .leftParenthesis
+        case ")": type = .rightParenthesis
+        case "{": type = .leftCurlyBracket
+        case "}": type = .rightCurlyBracket
+            
         // Otherwise...
         default:
             //

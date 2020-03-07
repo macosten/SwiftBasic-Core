@@ -10,6 +10,8 @@ import Foundation
 
 public class BasicParser: NSObject {
     
+    typealias Symbol = SymbolMap.Symbol
+    
     public enum ParserError: Error {
         case unexpectedToken(expected: TokenType, actual: TokenType, atLine: Int, tokenNumber: Int) // If the expected and actual types of the current token differ, this error will be thrown.
         case badFactor(badTokenType: TokenType, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if we failed to parse a factor. atLine and tokenNumber are zero-indexed.
@@ -25,6 +27,7 @@ public class BasicParser: NSObject {
         case internalDowncastError(moreInfo: String) // Thrown instead of downcastFailed; not much is passed mostly because this isn't a problem with the user's program, but rather with SwiftBasic.
         case integerOverOrUnderflow(failedOperation: String, atLine: Int, tokenNumber: Int) // Thrown instead of integerOverflow or integerUnderflow.
         case programEndedManually // Thrown when .eat() is called after the program is ended with endProgram.
+        case cannotSubscript(atLine: Int, tokenNumber: Int) // Thrown if someone tries to use a subscript on a value that can't be subscripted, like a number.
         case unknownSymbolError(moreInfo: String) // Thrown instead of SymbolError.unknownError.
         
     }
@@ -32,9 +35,9 @@ public class BasicParser: NSObject {
     private let lexer = BasicLexer()
     
     
-    private var symbolMap = SymbolMap()
-    private var labelMap = LabelMap() // [Line Number/Identifier at start of line : Index of Basic line]
-    private var basicLines = [[BasicToken]]() // One line of Basic turns into one of the arrays in this 2D array of tokens.
+    internal var symbolMap = SymbolMap()
+    internal var labelMap = LabelMap() // [Line Number/Identifier at start of line : Index of Basic line]
+    internal var basicLines = [[BasicToken]]() // One line of Basic turns into one of the arrays in this 2D array of tokens.
     
     private var programCounter = -1 // This index of the line of code we're running - an index of basicLines. We start "before" the first line of our program.
     private var tokenIndex = 0 // The index of the current token in the current line.
@@ -86,6 +89,7 @@ public class BasicParser: NSObject {
                     throw ParserError.unknownError(inMethodNamed: "findLabel", reason: "Failed to get raw string value from identifier token. This is a bug.")
                 }
                 if tokenAfterId?.isAssignment ?? false { break } // Break out of the switch statement if the next token is an assignment - this isn't a label, but rather an assignment.
+                else if let type = tokenAfterId?.type, type == .leftSquareBracket { break } // Break out of the switch statement if the next token is an opening square bracket. It could be an assignment (like dictionary["key"] = value).
                 else {
                     basicLines[index][0].isLabel = true // Note that the token is a label.
                     labelMap[rawIdentifier] = index // Fill in the label mapping.
@@ -107,8 +111,7 @@ public class BasicParser: NSObject {
     
     /// Parse a line, which is an optional label and then a statement.
     private func parseLine() throws {
-        let nextTokenIsAssignmentOperator = nextToken?.isAssignment ?? false
-        if currentToken.type == .integer || (currentToken.type == .identifier && !nextTokenIsAssignmentOperator) { // Labels are either integers at the start of a line, or identifiers at the start of a line not followed by an assignment operator.
+        if currentToken.isLabel {
             try eat(currentToken.type) // Ignore labels -- they've already been processed in findLabels().
         }
         try parseStatement()
@@ -139,8 +142,8 @@ public class BasicParser: NSObject {
             try eat(currentToken.type) // Heh, I guess this will always succeed.
             let rhs = try parseExpression()
             switch operatorType { // Set the truth value based on the operator.
-            case .equalTo: if try lhs == rhs { truthValue = true }
-            case .notEqualTo: if try lhs != rhs { truthValue = true }
+            case .equalTo: if lhs == rhs { truthValue = true }
+            case .notEqualTo: if lhs != rhs { truthValue = true }
             case .lessThan: if try lhs < rhs { truthValue = true }
             case .greaterThan: if try lhs > rhs { truthValue = true }
             case .lessThanOrEqualTo: if try lhs <= rhs { truthValue = true }
@@ -157,7 +160,7 @@ public class BasicParser: NSObject {
             let firstVarName = currentToken.rawValue
             guard let delegate = delegate else { throw ParserError.delegateNotSet }
             let firstInputValue = delegate.handleInput()
-            let firstSymbol = try SymbolMap.Symbol(fromString: firstInputValue)
+            let firstSymbol = Symbol(fromString: firstInputValue)
             try symbolMap.insert(name: firstVarName, value: firstSymbol)
             try eat(.identifier)
             
@@ -165,7 +168,7 @@ public class BasicParser: NSObject {
                 try eat(.comma)
                 let varName = currentToken.rawValue
                 let inputValue = delegate.handleInput()
-                let symbol = try SymbolMap.Symbol(fromString: inputValue)
+                let symbol = Symbol(fromString: inputValue)
                 try symbolMap.insert(name: varName, value: symbol)
                 try eat(.identifier)
             }
@@ -198,7 +201,16 @@ public class BasicParser: NSObject {
     /// Parses an assignment, like "I = I + 10" or "B += 40".
     private func parseAssignment() throws {
         let varName = currentToken.rawValue
+        var keySymbol: Symbol? // In case this is assigning to a key in a dictionary; if so, this will be non-nil and contain the value of the key.
         try eat(.identifier)
+        
+        // See if we're assigning to a subscript.
+        if currentToken.type == .leftSquareBracket { // Parse a key in square brackets, if it exists.
+            try eat(.leftSquareBracket)
+            keySymbol = try parseExpression()
+            try eat(.rightSquareBracket)
+        }
+        
         guard currentToken.isAssignment else { // If the current token isn't an assignment, throw an error.
             throw ParserError.badStatement(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex, reason: "Token must be an assignment operator, but it's not.")
         }
@@ -207,6 +219,14 @@ public class BasicParser: NSObject {
         
         let valueSymbol = try parseExpression() // Calculate the value we're assigning.
         
+        if let key = keySymbol { try processSubscriptedAssignment(varName: varName, key: key, assignmentType: assignmentType, valueSymbol: valueSymbol) }
+        else { try processNormalAssignment(varName: varName, assignmentType: assignmentType, valueSymbol: valueSymbol) }
+        
+        try eat(.newline)
+    }
+        
+    /// Process an assignment to a non-dictionary symbol.
+    private func processNormalAssignment(varName: String, assignmentType: TokenType, valueSymbol: Symbol) throws {
         if assignmentType == .assign { // var = valueSymbol
             try symbolMap.insert(name: varName, value: valueSymbol)
         }
@@ -226,10 +246,46 @@ public class BasicParser: NSObject {
             case .modAssign: // var %= valueSymbol
                 try symbolMap.insert(name: varName, value: oldValueSymbol % valueSymbol) // Mod the existing value by the new value.
             default:
-                throw ParserError.unknownError(inMethodNamed: "parseAssignment", reason: "There's an assignment operator on line \(programCounter) [curentToken.isAssignment == true], but it wasn't caught in the appropriate switch assignment. Type: \(assignmentType).")
+                throw ParserError.unknownError(inMethodNamed: "parseNormalAssignment", reason: "There's an assignment operator on line \(programCounter) [curentToken.isAssignment == true], but it wasn't caught in the appropriate switch assignment. Type: \(assignmentType).")
             }
         }
-        try eat(.newline)
+    }
+    
+    /// Process an assignment to a dictionary or a subscript of a string.
+    private func processSubscriptedAssignment(varName: String, key: Symbol, assignmentType: TokenType, valueSymbol: Symbol) throws {
+        guard let existingSymbol = symbolMap.get(symbolNamed: varName) else {
+            // If this is an uninitialized value, then assume we're just assigning this thing to a dictionary.
+            try symbolMap.insert(name: varName, value: [key: valueSymbol])
+            return
+        }
+        
+        switch existingSymbol.type {
+        case .dictionary:
+            guard var dict = existingSymbol.value as? SymbolMap.SymbolDictionary else { throw ParserError.internalDowncastError(moreInfo: "A dictionary symbol did not contain a dictionary. This is probably a bug.") }
+            if assignmentType == .assign { // Regular assignment
+                dict[key] = valueSymbol // Make the assignment
+                try symbolMap.insert(name: varName, value: dict)
+            }
+            else {
+                guard let oldValueSymbol = dict[key] else { throw ParserError.uninitializedSymbol(name: varName, atLine: programCounter, tokenNumber: tokenIndex - 1) }
+                switch assignmentType {
+                case .plusAssign: dict[key] = try oldValueSymbol + valueSymbol
+                case .minusAssign: dict[key] = try oldValueSymbol - valueSymbol
+                case .multiplyAssign: dict[key] = try oldValueSymbol * valueSymbol
+                case .divideAssign: dict[key] = try oldValueSymbol / valueSymbol
+                case .modAssign: dict[key] = try oldValueSymbol % valueSymbol
+                default:
+                    throw ParserError.unknownError(inMethodNamed: "parseSubscriptedAssignment", reason: "There's an assignment operator on line \(programCounter) [curentToken.isAssignment == true], but it wasn't caught in the appropriate switch assignment. Type: \(assignmentType).")
+                }
+                try symbolMap.insert(name: varName, value: dict)
+            }
+        case .string:
+            throw ParserError.unknownSymbolError(moreInfo: "This is a planned feature, but isn't implemented yet.")
+        default:
+            throw ParserError.cannotSubscript(atLine: programCounter, tokenNumber: tokenIndex)
+        }
+        
+        
     }
     
     /// Parse a jump, like that as a part of a GOTO or a GOSUB.
@@ -259,6 +315,7 @@ public class BasicParser: NSObject {
         case .double: result = String(expressionSymbol.value as! Double)
         case .integer: result = String(expressionSymbol.value as! Int)
         case .string: result = String(expressionSymbol.value as! String)
+        case .dictionary: result = try expressionSymbol.asString()
         }
         if currentToken.type == .comma { // Continue down the list if there's a comma.
             try eat(.comma)
@@ -267,8 +324,8 @@ public class BasicParser: NSObject {
         return result
     }
     
-    /// Parse an expression.
-    private func parseExpression() throws -> SymbolMap.Symbol {
+    /// Parse an expression (plus, minus) -- the base of the order of operations.
+    private func parseExpression() throws -> Symbol {
         let termSymbol = try parseTerm()
         switch currentToken.type {
         case .plus:
@@ -284,8 +341,8 @@ public class BasicParser: NSObject {
         }
     }
     
-    /// Parse a term.
-    private func parseTerm() throws -> SymbolMap.Symbol {
+    /// Parse a term (multiply, divide, modulo).
+    private func parseTerm() throws -> Symbol {
         let exponentialSymbol = try parseExponential()
         switch currentToken.type {
         case .multiply:
@@ -306,7 +363,7 @@ public class BasicParser: NSObject {
     }
     
     /// Parse an exponential.
-    private func parseExponential() throws -> SymbolMap.Symbol { // A ** B
+    private func parseExponential() throws -> Symbol { // A ** B
         let factorSymbol = try parseFactor()
         switch currentToken.type {
         case .power:
@@ -318,28 +375,50 @@ public class BasicParser: NSObject {
         }
     }
     
-    /// Parse a factor.
-    private func parseFactor() throws -> SymbolMap.Symbol {
+    /// Parse a factor (literal data types, identifiers, and paretheticals -- the top of the order of operations).
+    private func parseFactor() throws -> Symbol {
         switch currentToken.type {
         case .identifier: // Fetch this identifier's value and return it as a Symbol.
-            let varName = currentToken.rawValue
+            var varName = currentToken.rawValue
             try eat(.identifier)
-            guard let symbol = symbolMap.get(symbolNamed: varName) else {
+            // Get the desired symbol.
+            guard var symbol = symbolMap.get(symbolNamed: varName) else {
                 throw ParserError.uninitializedSymbol(name: varName, atLine: programCounter, tokenNumber: tokenIndex)
+            }
+            // If this is a dictionary...
+            if symbol.type == .dictionary {
+                while currentToken.type == .leftSquareBracket { // "While" to ensure that nested dictionaries can be read
+                    try eat(.leftSquareBracket) // Eat the "["
+                    let key = try parseExpression() // Parse the key
+                    //if key.type == .dictionary { throw ParserError.naughty(moreInfo: "Please don't use dictionaries as keys in dictionaries.")} // Not sure if this necessarily needs to be banned, but of all the things you're allowed to do, it strikes me as the dumbest
+                    // For error reporting purposes, recalculate the new variable name to make it more clear what's wrong if someone tries to get an uninitialized value.
+                    varName = "\(varName)[\(try key.asString())]"
+                    
+                    // Ensure that the dictionary is both valid and that there's a value stored at that key (implementing optionals into Basic seems like a bit too much).
+                    guard let dict = symbol.value as? SymbolMap.SymbolDictionary else { throw ParserError.unknownSymbolError(moreInfo: "Failed to extract dictionary value from \(varName).") }
+                    
+                    guard let value = dict[key] else { throw ParserError.uninitializedSymbol(name: varName, atLine: programCounter, tokenNumber: tokenIndex) }
+                    symbol = value
+                    
+                    try eat(.rightSquareBracket) // Eat the "]"
+                }
             }
             return symbol
         case .integer: // Return a Symbol with this integer's value.
             let intValue = currentToken.intValue!
             try eat(.integer)
-            return SymbolMap.Symbol(type: .integer, value: intValue)
+            return Symbol(type: .integer, value: intValue)
         case .double: // Return a Symbol with this double's value.
             let doubleValue = currentToken.doubleValue!
             try eat(.double)
-            return SymbolMap.Symbol(type: .double, value: doubleValue)
+            return Symbol(type: .double, value: doubleValue)
         case .stringLiteral: // This might just be a string literal, in which case we should just return a symbol with it.
             let stringValue = currentToken.stringValue!
             try eat(.stringLiteral)
-            return SymbolMap.Symbol(type: .string, value: stringValue)
+            return Symbol(type: .string, value: stringValue)
+        case .dict: // This is a new empty dictionary.
+            try eat(.dict)
+            return Symbol(type: .dictionary, value: SymbolMap.SymbolDictionary())
         case .leftParenthesis: // Assume this is the start of a nested expression; evaluate that expression and return a Symbol with its value.
             let expValue = try parseExpression()
             try eat(.rightParenthesis)
@@ -357,37 +436,37 @@ public class BasicParser: NSObject {
             programCounter += 1 // Increment the program counter (we do this here in case the line modifies the program counter; if we do it after parseLine(), we'd mess it up)
             do {
                 try parseLine()
-            } catch SymbolMap.Symbol.SymbolError.unsupportedType(let value) { // Convert SymbolErrors to their equivalent ParserErrors.
+            } catch Symbol.SymbolError.unsupportedType(let value) { // Convert SymbolErrors to their equivalent ParserErrors.
                 running = false
                 throw ParserError.unsupportedSymbolDataType(value: value)
-            } catch SymbolMap.Symbol.SymbolError.cannotAdd(let lhs, let rhs, let reason) {
+            } catch Symbol.SymbolError.cannotAdd(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) + \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
-            } catch SymbolMap.Symbol.SymbolError.cannotSubtract(let lhs, let rhs, let reason) {
+            } catch Symbol.SymbolError.cannotSubtract(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) - \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
-            } catch SymbolMap.Symbol.SymbolError.cannotMultiply(let lhs, let rhs, let reason) {
+            } catch Symbol.SymbolError.cannotMultiply(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) * \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
-            } catch SymbolMap.Symbol.SymbolError.cannotDivide(let lhs, let rhs, let reason) {
+            } catch Symbol.SymbolError.cannotDivide(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) / \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
-            } catch SymbolMap.Symbol.SymbolError.cannotModulo(let lhs, let rhs, let reason) {
+            } catch Symbol.SymbolError.cannotModulo(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) % \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
-            } catch SymbolMap.Symbol.SymbolError.cannotExponentiate(let lhs, let rhs, let reason) {
+            } catch Symbol.SymbolError.cannotExponentiate(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) ** \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
-            } catch SymbolMap.Symbol.SymbolError.cannotCompare(let lhs, let rhs, let reason) {
+            } catch Symbol.SymbolError.cannotCompare(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badComparison(failedComparison: "\(lhs.value) and \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)
-            } catch SymbolMap.Symbol.SymbolError.downcastFailed(let leftSymbol, let desiredLeftType, let rightSymbol, let desiredRightType) {
+            } catch Symbol.SymbolError.downcastFailed(let leftSymbol, let desiredLeftType, let rightSymbol, let desiredRightType) {
                 running = false
                 throw ParserError.internalDowncastError(moreInfo: "An internal error ocurred (Downcasting \(leftSymbol.value) to \(desiredLeftType) and/or \(rightSymbol.value) to \(desiredRightType) failed). This shouldn't indicate a problem with your code; try running your program again.")
-            } catch SymbolMap.Symbol.SymbolError.integerOverflow(let factor0, let operation, let factor1) {
+            } catch Symbol.SymbolError.integerOverflow(let factor0, let operation, let factor1) {
                 running = false
                 throw ParserError.integerOverOrUnderflow(failedOperation: "\(factor0) \(operation) \(factor1)", atLine: programCounter, tokenNumber: tokenIndex)
-            } catch SymbolMap.Symbol.SymbolError.unknownError(let moreInfo) {
+            } catch Symbol.SymbolError.unknownError(let moreInfo) {
                 running = false
                 throw ParserError.unknownSymbolError(moreInfo: moreInfo)
             } catch { // Otherwise, just propagate the error.

@@ -10,13 +10,18 @@ import Foundation
 
 struct SymbolMap {
     
+    // Dictionaries are of the following type.
+    typealias SymbolDictionary = [Symbol: Symbol] // [subscript key : stored value]
+    // ...same as the SymbolMap's internal storage, but different intentions.
+    
     //MARK: -- Symbol Struct
-    struct Symbol {
+    struct Symbol: Hashable {
         
         enum SymbolType { // Keeps track of what kind of value this symbol holds.
             case integer
             case double
             case string
+            case dictionary
         } // Why not just use "if (symbol) is Type"? If I did that, then the switch statements wouldn't complain about being exhaustive if I decide to add another symbol type, and it'd be tougher to update...
         
         enum SymbolError : Error { // If we try to do something with two symbols that we shouldn't, an error of this type should be thrown.
@@ -35,15 +40,16 @@ struct SymbolMap {
         }
         
         let type: SymbolType // The variable's type.
-        let value: Any // The value itself.
+        let value: AnyHashable // The value itself.
         // Yes, this means that a symbol will need to be recreated whenever it's mutated.
         
-        init (type: SymbolType, value: Any){
+        init (type: SymbolType, value: AnyHashable){
             self.type = type
             self.value = value
         }
         
-        init (fromString string: String) throws {
+        // It's not possible to get a dictionary symbol from a string.
+        init (fromString string: String) {
             if let intValue = Int(string) {
                 self.type = .integer
                 self.value = intValue
@@ -54,15 +60,36 @@ struct SymbolMap {
                 self.type = .string
                 self.value = string
             }
-            // else { throw SymbolError.unsupportedType(value: string) }
         }
+        
+        // For the Hashable protocol.
+        func hash(into hasher: inout Hasher) { hasher.combine(value) }
         
         ///Returns this symbol's value as a String.
         func asString() throws -> String {
-            if type == .integer, let intValue = value as? Int { return String(intValue) }
-            else if type == .double, let doubleValue = value as? Double { return String(doubleValue) }
-            else if type == .string, let stringValue = value as? String { return stringValue }
-            else { throw SymbolError.unknownError(moreInfo: "Failed to create string representation of symbol \(self) - this shouldn't happen.") }
+            switch type {
+            case .integer:
+                if let intValue = value as? Int { return String(intValue) }
+            case .double:
+                if let doubleValue = value as? Double { return String(doubleValue) }
+            case .string:
+                if let stringValue = value as? String { return stringValue }
+            case .dictionary:
+                guard let dict = value as? SymbolDictionary else { break }
+                // This one's a little more involved.
+                var returnValue = "[" // The opening bracket...
+                returnValue += try (dict.map { (key, value) -> String in
+                    var keyString = try key.asString()
+                    if key.type == .string { keyString = "\"\(keyString)\"" } // Put quotes around it if it's a string
+                    var valueString = try value.asString()
+                    if value.type == .string { valueString = "\"\(valueString)\"" }
+                    return "\(keyString) = \(valueString)" // A KV-pair string for each pair...
+                    }).joined(separator: ", ") // joined by a comma and then a space...
+                returnValue += "]" // ...and then a closing bracket.
+                return returnValue
+            }
+            
+           throw SymbolError.unknownError(moreInfo: "Failed to create string representation of symbol \(self) - this shouldn't happen.")
         }
         
         
@@ -324,81 +351,38 @@ struct SymbolMap {
         
         
         // MARK: - Equality
-        static func ==(lhs: Symbol, rhs: Symbol) throws -> Bool {
+        static func ==(lhs: Symbol, rhs: Symbol) -> Bool {
             // An integer symbol will be returned iff both symbols contain integers.
             if lhs.type == .integer && rhs.type == .integer {
-                guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer)
-                }
+                guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { return false }
                 return lVal == rVal
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
-                guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Double else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .double)
-                }
+                guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Double else { return false }
                 return lVal == rVal
             }
             // If the right side is an Int, cast it.
             else if lhs.type == .double && rhs.type == .integer {
-                guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Int else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .integer)
-                }
+                guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Int else { return false }
                 return lVal == Double(rVal)
             }
             // If the left side is an Int, cast it.
             else if lhs.type == .integer && rhs.type == .double {
-                guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Double else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .double)
-                }
+                guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Double else { return false }
                 return Double(lVal) == rVal
             }
             // If both sides are strings, compare them.
             else if lhs.type == .string && rhs.type == .string {
-                guard let lVal = lhs.value as? String, let rVal = rhs.value as? String else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .string, rightSymbol: rhs, .string)
-                }
+                guard let lVal = lhs.value as? String, let rVal = rhs.value as? String else { return false }
                 return lVal == rVal
             }
-            // If the function gets to this point, then we're comparing types we shouldn't compare and we'll throw an error to complain about it.
-            throw SymbolError.cannotCompare(lhs: lhs, rhs: rhs)
+            // If the function gets to this point, then we're comparing types we shouldn't compare. Since this is needed for Hashable, it can't throw an error, so we'll just return false.
+            return false
        }
         
         // MARK: - Inequality
-        static func !=(lhs: Symbol, rhs: Symbol) throws -> Bool {
-            if lhs.type == .integer && rhs.type == .integer {
-                guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer)
-                }
-                return lVal != rVal
-            }
-            else if lhs.type == .double && rhs.type == .double {
-                guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Double else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .double)
-                }
-                return lVal != rVal
-            }
-            else if lhs.type == .double && rhs.type == .integer {
-                guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Int else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .integer)
-                }
-                return lVal != Double(rVal)
-            }
-            else if lhs.type == .integer && rhs.type == .double {
-                guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Double else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .double)
-                }
-                return Double(lVal) != rVal
-            }
-            // If both sides are strings, compare them.
-            else if lhs.type == .string && rhs.type == .string {
-                guard let lVal = lhs.value as? String, let rVal = rhs.value as? String else {
-                    throw SymbolError.downcastFailed(leftSymbol: lhs, .string, rightSymbol: rhs, .string)
-                }
-                return lVal != rVal
-            }
-            throw SymbolError.cannotCompare(lhs: lhs, rhs: rhs)
-        }
+        static func !=(lhs: Symbol, rhs: Symbol) -> Bool { !(lhs == rhs) }
         
         // MARK: - Less Than
         static func <(lhs: Symbol, rhs: Symbol) throws -> Bool {
@@ -486,11 +470,14 @@ struct SymbolMap {
     
     func get(symbolNamed name: String) -> Symbol? { return map[name] }
     
+    func typeOf(symbolNamed name: String) -> Symbol.SymbolType? { return map[name]?.type }
+    
     /// Attempt to insert a symbol. Throws if the provided value cannot be stored in a symbol.
-    mutating func insert(name: String, value: Any) throws {
+    mutating func insert(name: String, value: AnyHashable) throws {
         if value is Symbol { map[name] = (value as! Symbol) }
         else if value is Double { map[name] = Symbol(type: .double, value: value) }
         else if value is Int { map[name] = Symbol(type: .integer, value: value) }
+        else if value is SymbolDictionary { map[name] = Symbol(type: .dictionary, value: value) }
         else { throw Symbol.SymbolError.unsupportedType(value: value) }
     }
     
