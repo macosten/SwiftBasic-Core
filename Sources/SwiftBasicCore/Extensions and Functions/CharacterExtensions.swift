@@ -21,37 +21,25 @@ extension Character {
     }
 
     /// A Boolean value indicating whether this character is an emoji.
-    var isEmoji: Bool {
-        return isSimpleEmoji || isCombinedEmoji
-    }
+    var isEmoji: Bool { isSimpleEmoji || isCombinedEmoji }
     
     /// A Boolean value indicating if this is a valid character for a code token: Letters, Numbers, Emoji, and Underscores. TODO - Rename this.
-    var isValidForGeneralToken: Bool {
-        return isLetter || isNumber || isEmoji || self == "_" || self == "."
-    }
+    var isValidForGeneralToken: Bool { isLetter || isNumber || isEmoji || self == "_" || self == "." }
     
     /// A Boolean value indicating if this is a valid separator character - a semicolon, comma, or a bracket of some sort.
-    var isSeparator: Bool {
-        if self.unicodeScalars.count != 1 { return false } // These do not consist of more than one Unicode scalar.
-        let separatorCharacterSet = CharacterSet(charactersIn: ";,(){}[]")
-        guard let scalar = unicodeScalars.first else { return false }
-        return separatorCharacterSet.contains(scalar)
-    }
+    var isSeparator: Bool { isSingleScalarInCharacterSet(charactersIn: ";,(){}[]") }
     
     /// A Boolean value indicating if this is a character belonging to a mathematical, relational, or logical operator.
-    var isOperator: Bool {
-        if self.unicodeScalars.count != 1 { return false } // These do not consist of more than one Unicode scalar.
-        let operatorCharacterSet = CharacterSet(charactersIn: "+-*/%=<>!|^")
-        guard let scalar = unicodeScalars.first else { return false }
-        return operatorCharacterSet.contains(scalar)
-    }
+    var isOperator: Bool { isSingleScalarInCharacterSet(charactersIn: "+-*/%=<>!|^") }
     
     /// A Boolean value indicating if this is a quotation mark of some sort.
-    var isQuote: Bool {
+    var isQuote: Bool { isSingleScalarInCharacterSet(charactersIn: "\"“”«»「」") }
+    
+    /// Note that this is only intended to work on characters with one unicode scalar.
+    private func isSingleScalarInCharacterSet(charactersIn string: String) -> Bool {
         if self.unicodeScalars.count != 1 { return false } // These do not consist of more than one Unicode scalar.
-        let quoteCharacterSet = CharacterSet(charactersIn: "\"“”«»「」")
+        let quoteCharacterSet = CharacterSet(charactersIn: string)
         guard let scalar = unicodeScalars.first else { return false }
         return quoteCharacterSet.contains(scalar)
     }
-    
 }

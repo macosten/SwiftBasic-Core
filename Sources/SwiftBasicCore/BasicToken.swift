@@ -80,6 +80,7 @@ public enum TokenType {
     case cosecant
     case cotangent
     case power
+    case rand
     
     // MARK: - Other Standard Tokens
     case leftParenthesis
@@ -217,6 +218,7 @@ struct BasicToken {
         case "sec": type = .secant
         case "csc": type = .cosecant
         case "cot": type = .cotangent
+        case "rand": type = .rand
             
             
         // Separators

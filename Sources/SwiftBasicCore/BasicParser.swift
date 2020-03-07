@@ -419,6 +419,26 @@ public class BasicParser: NSObject {
         case .dict: // This is a new empty dictionary.
             try eat(.dict)
             return Symbol(type: .dictionary, value: SymbolMap.SymbolDictionary())
+        case .rand: // rand(lowerBound, upperBound) == (number between lowerBound and upperBound)
+            try eat(.rand)
+            try eat(.leftParenthesis)
+            
+            let lowerBound = try parseExpression()
+            guard lowerBound.type == .integer else {
+                throw ParserError.badMath(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be an integer.")
+            }
+            
+            try eat(.comma)
+            
+            let upperBound = try parseExpression()
+            guard upperBound.type == .integer else { throw ParserError.badMath(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The upper bound for rand() must be an integer.") }
+            try eat(.rightParenthesis)
+            
+            guard let lInt = lowerBound.value as? Int, let hInt = upperBound.value as? Int else { throw ParserError.internalDowncastError(moreInfo: "While computing a random number, the upper and lower integer bounds weren't integers. This is probably a bug with something somewhere...") }
+            guard lInt < hInt else { throw ParserError.badMath(failedOperation: "rand(\(lInt), \(hInt))", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be less than the upper bound.")}
+            
+            return Symbol(type: .integer, value: Int.random(in: lInt...hInt))
+            
         case .leftParenthesis: // Assume this is the start of a nested expression; evaluate that expression and return a Symbol with its value.
             let expValue = try parseExpression()
             try eat(.rightParenthesis)

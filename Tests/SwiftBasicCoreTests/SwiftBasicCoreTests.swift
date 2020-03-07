@@ -166,10 +166,7 @@ final class SwiftBasicCoreTests: XCTestCase {
         typealias Symbol = SymbolMap.Symbol
         
         let lexer = BasicLexer()
-        
-        print(lexer.getTokensForFileContents(input: "a[0]"))
-        
-        
+                
         let parser = BasicParser()
         let testConsole = TestConsole()
         parser.delegate = testConsole
@@ -200,6 +197,24 @@ final class SwiftBasicCoreTests: XCTestCase {
         XCTAssert(try dict[Symbol(type: .integer, value: random)]!.asString() == "🍪")
         XCTAssert(dict[Symbol(type: .string, value: "3 * 3")]!.value as! Int == 9)
         
+    }
+    
+    /// Tests the rand() function (to at least make sure it doesn't crash).
+    func testRand() {
+        typealias Symbol = SymbolMap.Symbol
+        
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        print rand(0, 20)
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+
     }
     
 }
