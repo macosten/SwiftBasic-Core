@@ -127,7 +127,7 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        print(testConsole.output)
+
         XCTAssert(testConsole.output == "What's your name?\nHello, \(myName)!\nWelcome to SwiftBasicCore!\n")
     }
     
@@ -195,7 +195,6 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        print(testConsole.output)
         
         let dict = parser.symbolMap.get(symbolNamed: "b")!.value as! SymbolMap.SymbolDictionary
         XCTAssert(try dict[Symbol(type: .integer, value: random)]!.asString() == "🍪")
@@ -329,9 +328,30 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        print(testConsole.output)
         
         XCTAssert(testConsole.output == "4\n0\n1\n")
+    }
+    
+    /// Tests for loops.
+    func testForLoop() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        for i in 1 to 10
+            print i
+        next
+        let string = "SwiftBasic"
+        for i in 0 to len(string)
+            print string[i]
+        next
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+        XCTAssert(testConsole.output == "1\n2\n3\n4\n5\n6\n7\n8\n9\nS\nw\ni\nf\nt\nB\na\ns\ni\nc\n")
     }
     
 }

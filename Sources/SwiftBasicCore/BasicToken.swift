@@ -26,7 +26,10 @@ public enum TokenType {
     case run
     case end
     case then
-    case dict // dictionary declaration
+    case `for`
+    case `in`
+    case to
+    case next
     
     case rem
     
@@ -170,7 +173,10 @@ struct BasicToken {
         case "clear": type = .clear
         case "list": type = .list
         case "end": type = .end
-        case "dict": type = .dict // Dictionary declaration - is always the value of an empty dictionary.
+        case "for": type = .for
+        case "in": type = .in
+        case "to": type = .to
+        case "next": type = .next
             
         case "rem": type = .rem
         

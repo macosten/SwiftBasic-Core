@@ -523,8 +523,8 @@ struct SymbolMap {
     /// Attempt to insert a symbol. Throws if the provided value cannot be stored in a symbol.
     mutating func insert(name: String, value: AnyHashable) throws {
         if value is Symbol { map[name] = (value as! Symbol) }
-        else if value is Double { map[name] = Symbol(type: .double, value: value) }
         else if value is Int { map[name] = Symbol(type: .integer, value: value) }
+        else if value is Double { map[name] = Symbol(type: .double, value: value) }
         else if value is SymbolDictionary { map[name] = Symbol(type: .dictionary, value: value) }
         else { throw Symbol.SymbolError.unsupportedType(value: value) }
     }

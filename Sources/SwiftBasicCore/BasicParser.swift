@@ -32,7 +32,10 @@ public class BasicParser: NSObject {
         case badSubscript(atLine: Int, tokenNumber: Int) // Thrown if someone tries to subscript a string with a non-integer type.
         case badFunctionArgument(failedOperation: String, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if there's a type mismatch between what a built-in function expects and what was passed in.
         case unknownSymbolError(moreInfo: String) // Thrown instead of SymbolError.unknownError.
-        
+        case cannotReturn(atLine: Int, tokenNumber: Int) // Thrown if the program encounters a return but there's no value on the jumpStack.
+        case cannotIterate(atLine: Int, tokenNumber: Int) // Thrown if the program encounters a next but there's no value on the forStack.
+        case badIndex(atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if a non-variable (non-identifier) index is used in a for loop.
+        case badRangeBound(atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if a bound in a range for a for loop isn't an integer.
     }
     
     private let lexer = BasicLexer()
@@ -49,7 +52,8 @@ public class BasicParser: NSObject {
     
     public private(set) var running : Bool = false // True when a program is running, false otherwise...
     
-    private var stack = Stack<Int>()
+    private var jumpStack = Stack<Int>()
+    private var forStack = Stack<LoopEntry>()
     
     public weak var delegate : BasicDelegate?
     
@@ -59,7 +63,7 @@ public class BasicParser: NSObject {
         labelMap.removeAll()
         programCounter = -1
         tokenIndex = 0
-        stack = Stack<Int>()
+        jumpStack = Stack<Int>()
         
         // Have the lexer find the tokens in the input string.
         basicLines = lexer.getTokensForFileContents(input: fromString)
@@ -180,14 +184,45 @@ public class BasicParser: NSObject {
             try eat(.goto)
             try parseJump()
         case .gosub: // Almost identical to GOTO but we push the value of the Program Counter to the stack.
-            stack.push(programCounter) // Store the program counter on the stack...
+            jumpStack.push(programCounter) // Store the program counter on the stack...
             try eat(.gosub)
             try parseJump()
         case .return: // Remember when we GOSUB-ed and pushed a value to the stack? Now we'll pop that value from the stack and go there.
             try eat(.return)
-            guard let target = stack.pop() else { break } // Should I hrow an error? Stop execution? Do nothing? I'm not really sure. I'll have to go look at what other Basics do.
+            guard let target = jumpStack.pop() else { throw ParserError.cannotReturn(atLine: programCounter, tokenNumber: tokenIndex) }
             try eat(.newline)
             programCounter = target // We will end up at the line after the line that called the subroutine.
+        case .for: // The start of a for loop!
+            try eat(.for) // FOR <index> IN <lowerBound> TO <upperBound>\n
+            guard currentToken.type == .identifier else { throw ParserError.badIndex(atLine: programCounter, tokenNumber: tokenIndex) }
+            let indexVar = currentToken
+            try eat(.identifier)
+            try eat(.in)
+            let lowerBound = try parseExpression()
+            guard lowerBound.type == .integer else { throw ParserError.badRangeBound(atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound must be an integer, but it wasn't.") }
+            try eat(.to)
+            let upperBound = try parseExpression()
+            guard upperBound.type == .integer else { throw ParserError.badRangeBound(atLine: programCounter, tokenNumber: tokenIndex, reason: "The upper bound must be an integer, but it wasn't.") }
+            guard let lVal = lowerBound.value as? Int, let uVal = upperBound.value as? Int else { throw ParserError.internalDowncastError(moreInfo: "Failed to extract integer information while constructing a range.") }
+            guard lVal < uVal else { throw ParserError.badRangeBound(atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound of the range must be less than the upper bound.") }
+            try eat(.newline)
+            // Now that we know for sure that line was well-formed, let's push the data to the appropriate stack and initialize the index.
+            try symbolMap.insert(name: indexVar.rawValue, value: lVal)
+            let newLoopEntry = LoopEntry(indexName: indexVar.rawValue, range: lVal..<uVal, startLine: programCounter) // run() will increment this value for us, so
+            forStack.push(newLoopEntry)
+        case .next: // Jump back to the start of the for loop we're in, if it's appropriate to do so, while incrementing the index variable.
+            try eat(.next) // NEXT\n
+            try eat(.newline)
+            // Let's take a peek at the data now that we know that was a well-formed line...
+            guard let loopEntry = forStack.peek() else { throw ParserError.cannotIterate(atLine: programCounter, tokenNumber: 0) }
+            guard let index = symbolMap.get(symbolNamed: loopEntry.indexName), index.type == .integer else { throw ParserError.badIndex(atLine: loopEntry.startLine, tokenNumber: 1, reason: "Did you change the type of this variable in the loop? The loop can't work if you did.") }
+            guard let iVal = index.value as? Int else { throw ParserError.internalDowncastError(moreInfo: "Failed to extract integer information while determining where to jump at the end of a for loop's body.")}
+            try symbolMap.insert(name: loopEntry.indexName, value: iVal + 1) // Increment the index.
+            if loopEntry.range.contains(iVal + 1) { // If the new index is still within the range...
+                programCounter = loopEntry.startLine // Jump back to the start of this for loop.
+            } else { // otherwise...
+                _ = forStack.pop() // Pop this entry for good.
+            }
         case .clear:
             guard let delegate = delegate else { throw ParserError.delegateNotSet }
             delegate.handleClear()
@@ -463,9 +498,6 @@ public class BasicParser: NSObject {
             let stringValue = currentToken.stringValue!
             try eat(.stringLiteral)
             return Symbol(type: .string, value: stringValue)
-        case .dict: // This is a new empty dictionary.
-            try eat(.dict)
-            return Symbol(type: .dictionary, value: SymbolMap.SymbolDictionary())
 // MARK: - Math Function Parsing
         case .rand: // rand(lowerBound, upperBound) == (number between lowerBound and upperBound)
             let arguments = try parseBuiltinFunctionArguments(.rand, argumentCount: 2)
@@ -616,7 +648,6 @@ public class BasicParser: NSObject {
             let newValue = try parseExpression()
             // Add it to the dictionary.
             newDict[newKey] = newValue
-            print(currentToken.type)
             if currentToken.type != .rightSquareBracket { try eat(.comma) }
         }
         try eat(.rightSquareBracket)
