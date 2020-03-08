@@ -27,7 +27,7 @@ extension Character {
     var isValidForGeneralToken: Bool { isLetter || isNumber || isEmoji || self == "_" || self == "." }
     
     /// A Boolean value indicating if this is a valid separator character - a semicolon, comma, or a bracket of some sort.
-    var isSeparator: Bool { isSingleScalarInCharacterSet(charactersIn: ";,(){}[]") }
+    var isSeparator: Bool { isSingleScalarInCharacterSet(charactersIn: ";:,(){}[]") }
     
     /// A Boolean value indicating if this is a character belonging to a mathematical, relational, or logical operator.
     var isOperator: Bool { isSingleScalarInCharacterSet(charactersIn: "+-*/%=<>!|^&") }

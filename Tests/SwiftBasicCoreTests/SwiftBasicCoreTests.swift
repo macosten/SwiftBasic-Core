@@ -8,10 +8,14 @@ final class SwiftBasicCoreTests: XCTestCase {
         ("testEndFunction", testEndFunction),
         ("testEndKeyword", testEndKeyword),
         ("testAssigningDoubles", testAssigningDoubles),
+        ("testAssigningStrings", testAssigningStrings),
         ("testStringOperators", testStringOperators),
         ("testDictionary", testDictionary),
         ("testRand", testRand),
-        ("testStringSubscript", testStringSubscript)
+        ("testStringSubscript", testStringSubscript),
+        ("testTrigFuncs", testTrigFuncs),
+        ("testBitwise", testBitwise),
+        ("testDictionaryLiteral", testDictionaryLiteral)
     ]
     
     /// Tests the arithmetic operators. This also tests INPUT and PRINT.
@@ -201,8 +205,7 @@ final class SwiftBasicCoreTests: XCTestCase {
     
     /// Tests the rand() function (to at least make sure it doesn't crashy).
     func testRand() {
-        typealias Symbol = SymbolMap.Symbol
-        
+
         let parser = BasicParser()
         let testConsole = TestConsole()
         parser.delegate = testConsole
@@ -255,7 +258,7 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        print(testConsole.output)
+        // print(testConsole.output)
     }
     
     /// Tests the bitwise operators.
@@ -289,6 +292,46 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         XCTAssert(testConsole.output == "\(a << b)\n\(a >> b)\n\(a >> c)\n\(a << c)\n\(b & c)\n\(b | c)\n\(b ^ c)\n\(b & b)\n\(b | b)\n\(b ^ b)\n")
         
+    }
+    
+    /// Tests dictionary literals.
+    func testDictionaryLiteral() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        print [0:"Wow"]
+        b = [0:"Wow",1:"This",2:"is",3:"cool!"]
+        print b[3]
+        print []
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        XCTAssert(testConsole.output == "[0 = \"Wow\"]\ncool!\n[]\n")
+    }
+    
+    /// Tests the size functions (count, length).
+    func testSizeFunctions() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        let string = "This"
+        print len(string)
+        let dictionary = []
+        print count(dictionary)
+        dictionary["a"] = "b"
+        print count(dictionary)
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+        
+        XCTAssert(testConsole.output == "4\n0\n1\n")
     }
     
 }

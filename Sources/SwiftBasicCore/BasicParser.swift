@@ -11,6 +11,7 @@ import Foundation
 public class BasicParser: NSObject {
     
     typealias Symbol = SymbolMap.Symbol
+    typealias SymbolDictionary = [Symbol:Symbol]
     
     public enum ParserError: Error {
         case unexpectedToken(expected: TokenType, actual: TokenType, atLine: Int, tokenNumber: Int) // If the expected and actual types of the current token differ, this error will be thrown.
@@ -29,6 +30,7 @@ public class BasicParser: NSObject {
         case programEndedManually // Thrown when .eat() is called after the program is ended with endProgram.
         case cannotSubscript(atLine: Int, tokenNumber: Int) // Thrown if someone tries to use a subscript on a value that can't be subscripted, like a number.
         case badSubscript(atLine: Int, tokenNumber: Int) // Thrown if someone tries to subscript a string with a non-integer type.
+        case badFunctionArgument(failedOperation: String, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown if there's a type mismatch between what a built-in function expects and what was passed in.
         case unknownSymbolError(moreInfo: String) // Thrown instead of SymbolError.unknownError.
         
     }
@@ -470,13 +472,11 @@ public class BasicParser: NSObject {
             let lowerBound = arguments[0]
             let upperBound = arguments[1]
 
-            guard lowerBound.type == .integer else {
-                throw ParserError.badMath(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be an integer.")
-            }
-            guard upperBound.type == .integer else { throw ParserError.badMath(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The upper bound for rand() must be an integer.") }
+            guard lowerBound.type == .integer else { throw ParserError.badFunctionArgument(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be an integer.") }
+            guard upperBound.type == .integer else { throw ParserError.badFunctionArgument(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The upper bound for rand() must be an integer.") }
 
             guard let lInt = lowerBound.value as? Int, let hInt = upperBound.value as? Int else { throw ParserError.internalDowncastError(moreInfo: "While computing a random number, the upper and lower integer bounds weren't integers. This is probably a bug with something somewhere...") }
-            guard lInt < hInt else { throw ParserError.badMath(failedOperation: "rand(\(lInt), \(hInt))", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be less than the upper bound.")}
+            guard lInt < hInt else { throw ParserError.badMath(failedOperation: "rand(\(lInt), \(hInt))", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be less than the upper bound.") }
             
             return Symbol(type: .integer, value: Int.random(in: lInt...hInt))
         case .sine: // sin(arg)
@@ -487,7 +487,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: sin(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "sin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "sin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .cosine: // cos(arg)
             let argument = try parseBuiltinFunctionArguments(.cosine, argumentCount: 1)[0] // Calculate the argument.
@@ -497,7 +497,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: cos(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "cos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "cos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .tangent: // tan(arg)
             let argument = try parseBuiltinFunctionArguments(.tangent, argumentCount: 1)[0] // Calculate the argument.
@@ -507,7 +507,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: tan(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "tan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "tan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .secant: // sec(arg)
             let argument = try parseBuiltinFunctionArguments(.secant, argumentCount: 1)[0] // Calculate the argument.
@@ -518,7 +518,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: 1 / cos(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "sec", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "sec", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .cosecant: // csc(arg)
             let argument = try parseBuiltinFunctionArguments(.cosecant, argumentCount: 1)[0] // Calculate the argument.
@@ -528,7 +528,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: 1 / sin(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "csc", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "csc", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .cotangent: // cot(arg)
             let argument = try parseBuiltinFunctionArguments(.cotangent, argumentCount: 1)[0] // Calculate the argument.
@@ -538,7 +538,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: 1 / tan(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "cot", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "cot", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .arcsine:
             let argument = try parseBuiltinFunctionArguments(.arcsine, argumentCount: 1)[0] // Calculate the argument.
@@ -547,7 +547,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: asin(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "asin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "asin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .arccosine:
             let argument = try parseBuiltinFunctionArguments(.arccosine, argumentCount: 1)[0] // Calculate the argument.
@@ -556,7 +556,7 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: acos(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "acos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "acos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .arctangent:
             let argument = try parseBuiltinFunctionArguments(.arctangent, argumentCount: 1)[0] // Calculate the argument.
@@ -565,12 +565,28 @@ public class BasicParser: NSObject {
             } else if let doubleValue = argument.value as? Double {
                 return Symbol(type: .double, value: atan(doubleValue))
             } else {
-                throw ParserError.badMath(failedOperation: "atan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+                throw ParserError.badFunctionArgument(failedOperation: "atan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .length: // Returns the length of a string.
+            let argument = try parseBuiltinFunctionArguments(.length, argumentCount: 1)[0]
+            if let stringValue = argument.value as? String {
+                return Symbol(type: .integer, value: stringValue.count)
+            } else {
+                throw ParserError.badFunctionArgument(failedOperation: "len", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a string.")
+            }
+        case .count: // Returns the number of elements in a dictionary.
+            let argument = try parseBuiltinFunctionArguments(.count, argumentCount: 1)[0]
+            if let dict = argument.value as? SymbolDictionary {
+                return Symbol(type: .integer, value: dict.count)
+            } else {
+                throw ParserError.badFunctionArgument(failedOperation: "count", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a dictionary.")
             }
         case .leftParenthesis: // Assume this is the start of a nested expression; evaluate that expression and return a Symbol with its value.
             let expValue = try parseExpression()
             try eat(.rightParenthesis)
             return expValue
+        case .leftSquareBracket: // Assume this is the start of a dictionary literal.
+            return try parseDictionaryLiteral()
         default:
             throw ParserError.badFactor(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex)
         }
@@ -588,6 +604,26 @@ public class BasicParser: NSObject {
         try eat(.rightParenthesis)
         return arguments
     }
+    
+    /// Parses a dictionary literal, starting with a [ and ending with a ].
+    private func parseDictionaryLiteral() throws -> Symbol {
+        var newDict = SymbolDictionary()
+        try eat(.leftSquareBracket)
+        while currentToken.type != .rightSquareBracket {
+            // Parse the new key and value.
+            let newKey = try parseExpression()
+            try eat(.colon)
+            let newValue = try parseExpression()
+            // Add it to the dictionary.
+            newDict[newKey] = newValue
+            print(currentToken.type)
+            if currentToken.type != .rightSquareBracket { try eat(.comma) }
+        }
+        try eat(.rightSquareBracket)
+        return Symbol(type: .dictionary, value: newDict)
+    }
+   
+    // private func parseRemainderOfDictionaryAsArrayLiteral() throws -> Symbol { }
     
     /// You may wish to run this on a background thread.
     public func run() throws {

@@ -82,6 +82,10 @@ public enum TokenType {
     case power
     case rand
     
+    // MARK: - Other Built-in functions
+    case length
+    case count
+    
     // MARK: - Other Standard Tokens
     case leftParenthesis
     case rightParenthesis
@@ -92,6 +96,7 @@ public enum TokenType {
     case rightSquareBracket
     case quotationMarks
     case apostrophe
+    case colon
     case semicolon
     
     // MARK: - Data Types
@@ -220,9 +225,14 @@ struct BasicToken {
         case "cot": type = .cotangent
         case "rand": type = .rand
             
+        // Other built-in functions
+        case "len": type = .length
+        case "count": type = .count
+            
         // Separators
         case ",": type = .comma
         case ";": type = .semicolon
+        case ":": type = .colon
         case "[": type = .leftSquareBracket
         case "]": type = .rightSquareBracket
         case "(": type = .leftParenthesis
