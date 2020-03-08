@@ -193,10 +193,10 @@ struct BasicToken {
         case ">=": type = .greaterThanOrEqualTo
         case "<=": type = .lessThanOrEqualTo
         
-        // Logical
-        case "&&": type = .logicalAnd
-        case "||": type = .logicalOr
-        case "!": type = .logicalNot
+        // Logical -- not supported yet
+        // case "&&": type = .logicalAnd
+        // case "||": type = .logicalOr
+        // case "!": type = .logicalNot
         
         //Bitwise
         case "&": type = .bitwiseAnd
@@ -212,14 +212,13 @@ struct BasicToken {
         case "sin": type = .sine
         case "cos": type = .cosine
         case "tan": type = .tangent
-        case "arcsin": type = .arcsine
-        case "arccos": type = .arccosine
-        case "arctan": type = .arctangent
+        case "asin": type = .arcsine
+        case "acos": type = .arccosine
+        case "atan": type = .arctangent
         case "sec": type = .secant
         case "csc": type = .cosecant
         case "cot": type = .cotangent
         case "rand": type = .rand
-            
             
         // Separators
         case ",": type = .comma

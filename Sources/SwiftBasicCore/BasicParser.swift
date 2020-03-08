@@ -28,6 +28,7 @@ public class BasicParser: NSObject {
         case integerOverOrUnderflow(failedOperation: String, atLine: Int, tokenNumber: Int) // Thrown instead of integerOverflow or integerUnderflow.
         case programEndedManually // Thrown when .eat() is called after the program is ended with endProgram.
         case cannotSubscript(atLine: Int, tokenNumber: Int) // Thrown if someone tries to use a subscript on a value that can't be subscripted, like a number.
+        case badSubscript(atLine: Int, tokenNumber: Int) // Thrown if someone tries to subscript a string with a non-integer type.
         case unknownSymbolError(moreInfo: String) // Thrown instead of SymbolError.unknownError.
         
     }
@@ -280,7 +281,7 @@ public class BasicParser: NSObject {
                 try symbolMap.insert(name: varName, value: dict)
             }
         case .string:
-            throw ParserError.unknownSymbolError(moreInfo: "This is a planned feature, but isn't implemented yet.")
+            throw ParserError.unknownSymbolError(moreInfo: "Subscripting strings and modifying them is a planned feature, but isn't implemented yet.")
         default:
             throw ParserError.cannotSubscript(atLine: programCounter, tokenNumber: tokenIndex)
         }
@@ -324,7 +325,7 @@ public class BasicParser: NSObject {
         return result
     }
     
-    /// Parse an expression (plus, minus) -- the base of the order of operations.
+    /// Infix operators equivalent to AdditionPrecedence in Swift go here (like +, -, |, and ^).
     private func parseExpression() throws -> Symbol {
         let termSymbol = try parseTerm()
         switch currentToken.type {
@@ -336,12 +337,20 @@ public class BasicParser: NSObject {
             try eat(.minus)
             let nextSymbol = try parseTerm()
             return try termSymbol - nextSymbol
+        case .bitwiseOr:
+            try eat(.bitwiseOr)
+            let nextSymbol = try parseFactor()
+            return try termSymbol | nextSymbol
+        case .bitwiseXor:
+            try eat(.bitwiseXor)
+            let nextSymbol = try parseFactor()
+            return try termSymbol ^ nextSymbol
         default:
             return termSymbol
         }
     }
     
-    /// Parse a term (multiply, divide, modulo).
+    /// Infix operators equivalent to MultiplicationPrecedence go here (like *, /, and &).
     private func parseTerm() throws -> Symbol {
         let exponentialSymbol = try parseExponential()
         switch currentToken.type {
@@ -357,24 +366,45 @@ public class BasicParser: NSObject {
             try eat(.mod)
             let nextSymbol = try parseExponential()
             return try exponentialSymbol % nextSymbol
+        case .bitwiseAnd:
+            try eat(.bitwiseAnd)
+            let nextSymbol = try parseFactor()
+            return try exponentialSymbol & nextSymbol
         default:
             return exponentialSymbol
         }
     }
     
-    /// Parse an exponential.
+    /// Infix operators equivalent to ExponentiationPrecedence (defined in Exponentiation.swift) go here.
     private func parseExponential() throws -> Symbol { // A ** B
-        let factorSymbol = try parseFactor()
+        let bitShiftSymbol = try parseBitwiseShift()
         switch currentToken.type {
         case .power:
             try eat(.power)
+            let nextSymbol = try parseBitwiseShift()
+            return try bitShiftSymbol ** nextSymbol
+        default:
+            return bitShiftSymbol
+        }
+    }
+    
+    /// Infix operators equivalent to BitwiseShiftPrecedence go here.
+    private func parseBitwiseShift() throws -> Symbol {
+        let factorSymbol = try parseFactor()
+        switch currentToken.type {
+        case .bitwiseShiftLeft:
+            try eat(.bitwiseShiftLeft)
             let nextSymbol = try parseFactor()
-            return try factorSymbol ** nextSymbol
+            return try factorSymbol << nextSymbol
+        case .bitwiseShiftRight:
+            try eat(.bitwiseShiftRight)
+            let nextSymbol = try parseFactor()
+            return try factorSymbol >> nextSymbol
         default:
             return factorSymbol
         }
     }
-    
+        
     /// Parse a factor (literal data types, identifiers, and paretheticals -- the top of the order of operations).
     private func parseFactor() throws -> Symbol {
         switch currentToken.type {
@@ -403,6 +433,21 @@ public class BasicParser: NSObject {
                     try eat(.rightSquareBracket) // Eat the "]"
                 }
             }
+            // If this is a string...
+            else if symbol.type == .string && currentToken.type == .leftSquareBracket { // ...and we're subscripting it...
+                try eat(.leftSquareBracket)
+                
+                let indexSymbol = try parseExpression() // Parse the subexpression
+                // Get the character at the appropriate index.
+                guard let string = symbol.value as? String else { throw ParserError.internalDowncastError(moreInfo: "Failed to extract string value from \(varName).") }
+                guard let indexValue = indexSymbol.value as? Int else { throw ParserError.badSubscript(atLine: programCounter, tokenNumber: tokenIndex) }
+                let index = string.index(string.startIndex, offsetBy: indexValue)
+                guard string.indices.contains(index) else { throw ParserError.badSubscript(atLine: programCounter, tokenNumber: tokenIndex) }
+
+                symbol = Symbol(type: .string, value: String(string[index])) // Replace the symbol with one whose value is just the character in a string.
+                
+                try eat(.rightSquareBracket)
+            }
             return symbol
         case .integer: // Return a Symbol with this integer's value.
             let intValue = currentToken.intValue!
@@ -419,26 +464,109 @@ public class BasicParser: NSObject {
         case .dict: // This is a new empty dictionary.
             try eat(.dict)
             return Symbol(type: .dictionary, value: SymbolMap.SymbolDictionary())
+// MARK: - Math Function Parsing
         case .rand: // rand(lowerBound, upperBound) == (number between lowerBound and upperBound)
-            try eat(.rand)
-            try eat(.leftParenthesis)
-            
-            let lowerBound = try parseExpression()
+            let arguments = try parseBuiltinFunctionArguments(.rand, argumentCount: 2)
+            let lowerBound = arguments[0]
+            let upperBound = arguments[1]
+
             guard lowerBound.type == .integer else {
                 throw ParserError.badMath(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be an integer.")
             }
-            
-            try eat(.comma)
-            
-            let upperBound = try parseExpression()
             guard upperBound.type == .integer else { throw ParserError.badMath(failedOperation: "rand", atLine: programCounter, tokenNumber: tokenIndex, reason: "The upper bound for rand() must be an integer.") }
-            try eat(.rightParenthesis)
-            
+
             guard let lInt = lowerBound.value as? Int, let hInt = upperBound.value as? Int else { throw ParserError.internalDowncastError(moreInfo: "While computing a random number, the upper and lower integer bounds weren't integers. This is probably a bug with something somewhere...") }
             guard lInt < hInt else { throw ParserError.badMath(failedOperation: "rand(\(lInt), \(hInt))", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be less than the upper bound.")}
             
             return Symbol(type: .integer, value: Int.random(in: lInt...hInt))
-            
+        case .sine: // sin(arg)
+            let argument = try parseBuiltinFunctionArguments(.sine, argumentCount: 1)[0] // Calculate the argument.
+            // Evaluate the function.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: sin(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: sin(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "sin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .cosine: // cos(arg)
+            let argument = try parseBuiltinFunctionArguments(.cosine, argumentCount: 1)[0] // Calculate the argument.
+            // Evaluate the function.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: cos(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: cos(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "cos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .tangent: // tan(arg)
+            let argument = try parseBuiltinFunctionArguments(.tangent, argumentCount: 1)[0] // Calculate the argument.
+            // Evaluate the function.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: tan(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: tan(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "tan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .secant: // sec(arg)
+            let argument = try parseBuiltinFunctionArguments(.secant, argumentCount: 1)[0] // Calculate the argument.
+            // Evaluate the function.
+            if let intValue = argument.value as? Int {
+                // These will never be completely precise -- it's just the nature of limited-precision numbers like Doubles. Thus, the risk of accidentally dividing by zero is not actually 
+                return Symbol(type: .double, value: 1 / cos(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: 1 / cos(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "sec", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .cosecant: // csc(arg)
+            let argument = try parseBuiltinFunctionArguments(.cosecant, argumentCount: 1)[0] // Calculate the argument.
+            // Evaluate the function.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: 1 / sin(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: 1 / sin(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "csc", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .cotangent: // cot(arg)
+            let argument = try parseBuiltinFunctionArguments(.cotangent, argumentCount: 1)[0] // Calculate the argument.
+            // Evaluate the function.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: 1 / tan(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: 1 / tan(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "cot", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .arcsine:
+            let argument = try parseBuiltinFunctionArguments(.arcsine, argumentCount: 1)[0] // Calculate the argument.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: asin(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: asin(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "asin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .arccosine:
+            let argument = try parseBuiltinFunctionArguments(.arccosine, argumentCount: 1)[0] // Calculate the argument.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: acos(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: acos(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "acos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
+        case .arctangent:
+            let argument = try parseBuiltinFunctionArguments(.arctangent, argumentCount: 1)[0] // Calculate the argument.
+            if let intValue = argument.value as? Int {
+                return Symbol(type: .double, value: atan(Double(intValue)))
+            } else if let doubleValue = argument.value as? Double {
+                return Symbol(type: .double, value: atan(doubleValue))
+            } else {
+                throw ParserError.badMath(failedOperation: "atan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
+            }
         case .leftParenthesis: // Assume this is the start of a nested expression; evaluate that expression and return a Symbol with its value.
             let expValue = try parseExpression()
             try eat(.rightParenthesis)
@@ -446,6 +574,19 @@ public class BasicParser: NSObject {
         default:
             throw ParserError.badFactor(badTokenType: currentToken.type, atLine: programCounter, tokenNumber: tokenIndex)
         }
+    }
+    
+    /// Given an argument count, parses the arguments in the built-in function and returns them in an array of symbols.
+    func parseBuiltinFunctionArguments(_ type: TokenType, argumentCount: UInt) throws -> [Symbol] {
+        try eat(type)
+        try eat(.leftParenthesis)
+        var arguments = [Symbol]()
+        for i in 0..<argumentCount {
+            arguments.append(try parseExpression())
+            if i < argumentCount - 1 { try eat(.comma) }
+        }
+        try eat(.rightParenthesis)
+        return arguments
     }
     
     /// You may wish to run this on a background thread.

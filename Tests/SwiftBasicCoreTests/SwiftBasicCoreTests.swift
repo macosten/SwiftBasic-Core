@@ -9,7 +9,9 @@ final class SwiftBasicCoreTests: XCTestCase {
         ("testEndKeyword", testEndKeyword),
         ("testAssigningDoubles", testAssigningDoubles),
         ("testStringOperators", testStringOperators),
-        ("testDictionary", testDictionary)
+        ("testDictionary", testDictionary),
+        ("testRand", testRand),
+        ("testStringSubscript", testStringSubscript)
     ]
     
     /// Tests the arithmetic operators. This also tests INPUT and PRINT.
@@ -164,9 +166,7 @@ final class SwiftBasicCoreTests: XCTestCase {
     /// Tests the functionality of dictionaries.
     func testDictionary() {
         typealias Symbol = SymbolMap.Symbol
-        
-        let lexer = BasicLexer()
-                
+               
         let parser = BasicParser()
         let testConsole = TestConsole()
         parser.delegate = testConsole
@@ -199,7 +199,7 @@ final class SwiftBasicCoreTests: XCTestCase {
         
     }
     
-    /// Tests the rand() function (to at least make sure it doesn't crash).
+    /// Tests the rand() function (to at least make sure it doesn't crashy).
     func testRand() {
         typealias Symbol = SymbolMap.Symbol
         
@@ -213,8 +213,49 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
+        
+    }
+    
+    /// Tests acessing individual characters in a string using a numeric subscript.
+    func testStringSubscript() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        let string = "Swift🌀Basic"
+        print string[0], string[1], string[2], string[3], string[4]
+        print string[5]
+        print string[6], string[7], string[8], string[9], string[10]
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        XCTAssert(testConsole.output == "Swift\n🌀\nBasic\n")
+    }
+    
+    /// Tests the trigonometric functions.
+    func testTrigFuncs() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        print "sin(pi) = ", sin(pi)
+        print "cos(pi) = ", cos(pi)
+        print "tan(pi) = ", tan(pi)
+        print "sec(pi) = ", sec(pi)
+        print "csc(pi) = ", csc(pi)
+        print "cot(pi) = ", cot(pi)
+        print "cos(pi/2) = ", cos(pi/2)
+        print "asin(1) = ", asin(1)
+        print "acos(1) = ", acos(1)
+        print "atan(1) = ", atan(1)
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
         print(testConsole.output)
-
     }
     
 }

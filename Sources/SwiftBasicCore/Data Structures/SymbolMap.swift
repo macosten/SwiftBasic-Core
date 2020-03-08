@@ -32,6 +32,8 @@ struct SymbolMap {
             case cannotDivide(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotModulo(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotExponentiate(base: Symbol, exponent: Symbol, reason: String? = nil)
+            case cannotBitShift(lhs: Symbol, rhs: Symbol, reason: String? = nil)
+            case cannotBitwiseLogical(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotCompare(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case downcastFailed(leftSymbol: Symbol, _ desiredLeftType: SymbolType, rightSymbol: Symbol, _ desiredRightType: SymbolType)
             case integerOverflow(factor0: Symbol, operation: TokenType, factor1: Symbol)
@@ -349,7 +351,48 @@ struct SymbolMap {
             throw SymbolError.cannotExponentiate(base: base, exponent: exponent)
         }
         
+        // MARK: -- Bitwise
+        // MARK: - Shift Left
+        static func <<(lhs: Symbol, rhs: Symbol) throws -> Symbol { // A << B
+            // Both sides need to be integers.
+            guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitShift(lhs: lhs, rhs: rhs, reason: "Only integers can be bitshifted, and only by another integer.") }
+            guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
+            return Symbol(type: .integer, value: lVal << rVal)
+        }
         
+        // MARK: - Shift Right
+        static func >>(lhs: Symbol, rhs: Symbol) throws -> Symbol { // A >> B
+            // Both sides need to be integers.
+            guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitShift(lhs: lhs, rhs: rhs, reason: "Only integers can be bitshifted, and only by another integer.") }
+            guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
+            return Symbol(type: .integer, value: lVal >> rVal)
+        }
+        
+        // MARK: - Bitwise And
+        static func &(lhs: Symbol, rhs: Symbol) throws -> Symbol {
+            // Both sides need to be integers.
+            guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitwiseLogical(lhs: lhs, rhs: rhs, reason: "Only integers support bitwise and, but an attempt was made with at least one non-integer type.") }
+            guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
+            return Symbol(type: .integer, value: lVal & rVal)
+        }
+        
+        // MARK: - Bitwise Or
+        static func |(lhs: Symbol, rhs: Symbol) throws -> Symbol {
+            // Both sides need to be integers.
+            guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitwiseLogical(lhs: lhs, rhs: rhs, reason: "Only integers support bitwise or, but an attempt was made with at least one non-integer type.") }
+            guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
+            return Symbol(type: .integer, value: lVal | rVal)
+        }
+        
+        // MARK: - Bitwise Xor
+        static func ^(lhs: Symbol, rhs: Symbol) throws -> Symbol {
+            // Both sides need to be integers.
+            guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitwiseLogical(lhs: lhs, rhs: rhs, reason: "Only integers support bitwise or, but an attempt was made with at least one non-integer type.") }
+            guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
+            return Symbol(type: .integer, value: lVal ^ rVal)
+        }
+        
+        // MARK: -- Comparisons
         // MARK: - Equality
         static func ==(lhs: Symbol, rhs: Symbol) -> Bool {
             // An integer symbol will be returned iff both symbols contain integers.
@@ -375,6 +418,11 @@ struct SymbolMap {
             // If both sides are strings, compare them.
             else if lhs.type == .string && rhs.type == .string {
                 guard let lVal = lhs.value as? String, let rVal = rhs.value as? String else { return false }
+                return lVal == rVal
+            }
+            // If both sides are dictionaries, compare them.
+            else if lhs.type == .dictionary && rhs.type == .dictionary {
+                guard let lVal = lhs.value as? SymbolDictionary, let rVal = rhs.value as? SymbolDictionary else { return false }
                 return lVal == rVal
             }
             // If the function gets to this point, then we're comparing types we shouldn't compare. Since this is needed for Hashable, it can't throw an error, so we'll just return false.
@@ -450,7 +498,7 @@ struct SymbolMap {
         
         // MARK: - Greater Than or Equal To
         static func >=(lhs: Symbol, rhs: Symbol) throws -> Bool { return try lhs > rhs || lhs == rhs }
-        
+                
     }
     
     // MARK: - Symbol Map
