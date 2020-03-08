@@ -258,4 +258,37 @@ final class SwiftBasicCoreTests: XCTestCase {
         print(testConsole.output)
     }
     
+    /// Tests the bitwise operators.
+    func testBitwise() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let a = Int.random(in: 32...256)
+        let b = Int.random(in: 1...5)
+        let c = Int.random(in: 1...5)
+        
+        let code = """
+        let a = \(a)
+        let b = \(b)
+        let c = \(c)
+        print a << b
+        print a >> b
+        print a >> c
+        print a << c
+        print b & c
+        print b | c
+        print b ^ c
+        print b & b
+        print b | b
+        print b ^ b
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        
+        XCTAssert(testConsole.output == "\(a << b)\n\(a >> b)\n\(a >> c)\n\(a << c)\n\(b & c)\n\(b | c)\n\(b ^ c)\n\(b & b)\n\(b | b)\n\(b ^ b)\n")
+        
+    }
+    
 }

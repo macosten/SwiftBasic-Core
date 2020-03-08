@@ -30,7 +30,7 @@ extension Character {
     var isSeparator: Bool { isSingleScalarInCharacterSet(charactersIn: ";,(){}[]") }
     
     /// A Boolean value indicating if this is a character belonging to a mathematical, relational, or logical operator.
-    var isOperator: Bool { isSingleScalarInCharacterSet(charactersIn: "+-*/%=<>!|^") }
+    var isOperator: Bool { isSingleScalarInCharacterSet(charactersIn: "+-*/%=<>!|^&") }
     
     /// A Boolean value indicating if this is a quotation mark of some sort.
     var isQuote: Bool { isSingleScalarInCharacterSet(charactersIn: "\"“”«»「」") }
