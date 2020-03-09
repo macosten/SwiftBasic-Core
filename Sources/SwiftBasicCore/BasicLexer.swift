@@ -108,7 +108,8 @@ class BasicLexer: NSObject {
     /// Tokenize one or more lines of Basic code.
     func getTokensForFileContents(input: String) -> [[BasicToken]] {
         var tokens = [[BasicToken]]()
-        let lines = input.split { $0.isNewline }
+        //let lines = input.split { $0.isNewline }
+        let lines = input.split(separator: "\n", omittingEmptySubsequences: false) // New behavior -- retains empty lines to make line numbers thrown by errors make more sense to the end-user.
         for line in lines { tokens.append(getTokensForLine(inputLine: line)) }
         return tokens
     }

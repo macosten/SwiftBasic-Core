@@ -31,9 +31,11 @@ final class SwiftBasicCoreTests: XCTestCase {
         PRINT A, " + ", B, " == ", A + B
         PRINT A, " - ", B, " == ", A - B
         PRINT A, " * ", B, " == ", A * B
+
         IF B == 0 THEN GOTO SkipDivision
         PRINT A, " / ", B, " == ", A / B
         PRINT A, " % ", B, " == ", A % B
+
         SkipDivision
         PRINT A, " ** ", B, " == ", A ** B
         """
