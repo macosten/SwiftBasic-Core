@@ -8,7 +8,7 @@
 
 import Foundation
 
-public class BasicParser: NSObject {
+final public class BasicParser: NSObject {
     
     typealias Symbol = SymbolMap.Symbol
     typealias SymbolDictionary = [Symbol:Symbol]

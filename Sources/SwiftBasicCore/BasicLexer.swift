@@ -9,7 +9,7 @@
 import Foundation
 
 /// A Lexer for Basic. More of a namespace than an actual class.
-class BasicLexer: NSObject {
+final class BasicLexer: NSObject {
     
     /// Tokenize one line of Basic code.
     private func getTokensForLine(inputLine: Substring) -> [BasicToken] {
