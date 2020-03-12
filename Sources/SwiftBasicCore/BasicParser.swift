@@ -22,7 +22,6 @@ final public class BasicParser: NSObject {
         case unknownLabelError(desiredLabel: Any, atLine: Int, tokenNumber: Int) // Thrown if the program attempts to jump to a label that doesn't exist.
         case unknownError(inMethodNamed: String, reason: String) // Thrown if the parser enters state that it really shouldn't (a bug, in other words).
         // Below here are errors that are essentially converted from SymbolErrors.
-        case unsupportedSymbolDataType(value: Any) // Thrown instead of SymbolError.unsupportedType(value: Any).
         case badMath(failedOperation: String, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown as an umbrella for the "cannot____" errors other than cannotCompare. If the need arises, I might split this error into the different operations (cannotAdd, cannotSubtract, etc).
         case badComparison(failedComparison: String, atLine: Int, tokenNumber: Int, reason: String? = nil) // Thrown instead of cannotCompare.
         case internalDowncastError(moreInfo: String) // Thrown instead of downcastFailed; not much is passed mostly because this isn't a problem with the user's program, but rather with SwiftBasic.
@@ -168,7 +167,7 @@ final public class BasicParser: NSObject {
             guard let delegate = delegate else { throw ParserError.delegateNotSet }
             let firstInputValue = delegate.handleInput()
             let firstSymbol = Symbol(fromString: firstInputValue)
-            try symbolMap.insert(name: firstVarName, value: firstSymbol)
+            symbolMap.insert(name: firstVarName, value: firstSymbol)
             try eat(.identifier)
             
             while (currentToken.type != .newline) { // Process further tokens
@@ -176,7 +175,7 @@ final public class BasicParser: NSObject {
                 let varName = currentToken.rawValue
                 let inputValue = delegate.handleInput()
                 let symbol = Symbol(fromString: inputValue)
-                try symbolMap.insert(name: varName, value: symbol)
+                symbolMap.insert(name: varName, value: symbol)
                 try eat(.identifier)
             }
             try eat(.newline)
@@ -207,7 +206,7 @@ final public class BasicParser: NSObject {
             guard lVal < uVal else { throw ParserError.badRangeBound(atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound of the range must be less than the upper bound.") }
             try eat(.newline)
             // Now that we know for sure that line was well-formed, let's push the data to the appropriate stack and initialize the index.
-            try symbolMap.insert(name: indexVar.rawValue, value: lVal)
+            symbolMap.insert(name: indexVar.rawValue, value: lVal)
             let newLoopEntry = LoopEntry(indexName: indexVar.rawValue, range: lVal..<uVal, startLine: programCounter) // run() will increment this value for us, so
             forStack.push(newLoopEntry)
         case .next: // Jump back to the start of the for loop we're in, if it's appropriate to do so, while incrementing the index variable.
@@ -217,7 +216,7 @@ final public class BasicParser: NSObject {
             guard let loopEntry = forStack.peek() else { throw ParserError.cannotIterate(atLine: programCounter, tokenNumber: 0) }
             guard let index = symbolMap.get(symbolNamed: loopEntry.indexName), index.type == .integer else { throw ParserError.badIndex(atLine: loopEntry.startLine, tokenNumber: 1, reason: "Did you change the type of this variable in the loop? The loop can't work if you did.") }
             guard let iVal = index.value as? Int else { throw ParserError.internalDowncastError(moreInfo: "Failed to extract integer information while determining where to jump at the end of a for loop's body.")}
-            try symbolMap.insert(name: loopEntry.indexName, value: iVal + 1) // Increment the index.
+            symbolMap.insert(name: loopEntry.indexName, value: iVal + 1) // Increment the index.
             if loopEntry.range.contains(iVal + 1) { // If the new index is still within the range...
                 programCounter = loopEntry.startLine // Jump back to the start of this for loop.
             } else { // otherwise...
@@ -266,7 +265,7 @@ final public class BasicParser: NSObject {
     /// Process an assignment to a non-dictionary symbol.
     private func processNormalAssignment(varName: String, assignmentType: TokenType, valueSymbol: Symbol) throws {
         if assignmentType == .assign { // var = valueSymbol
-            try symbolMap.insert(name: varName, value: valueSymbol)
+            symbolMap.insert(name: varName, value: valueSymbol)
         }
         else { // We'll need to figure out what the value of the variable we're assigning to is.
             guard let oldValueSymbol = symbolMap.get(symbolNamed: varName) else {
@@ -293,7 +292,7 @@ final public class BasicParser: NSObject {
     private func processSubscriptedAssignment(varName: String, key: Symbol, assignmentType: TokenType, valueSymbol: Symbol) throws {
         guard let existingSymbol = symbolMap.get(symbolNamed: varName) else {
             // If this is an uninitialized value, then assume we're just assigning this thing to a dictionary.
-            try symbolMap.insert(name: varName, value: [key: valueSymbol])
+            symbolMap.insert(name: varName, value: [key: valueSymbol])
             return
         }
         
@@ -302,7 +301,7 @@ final public class BasicParser: NSObject {
             guard var dict = existingSymbol.value as? SymbolMap.SymbolDictionary else { throw ParserError.internalDowncastError(moreInfo: "A dictionary symbol did not contain a dictionary. This is probably a bug.") }
             if assignmentType == .assign { // Regular assignment
                 dict[key] = valueSymbol // Make the assignment
-                try symbolMap.insert(name: varName, value: dict)
+                symbolMap.insert(name: varName, value: dict)
             }
             else {
                 guard let oldValueSymbol = dict[key] else { throw ParserError.uninitializedSymbol(name: varName, atLine: programCounter, tokenNumber: tokenIndex - 1) }
@@ -315,7 +314,7 @@ final public class BasicParser: NSObject {
                 default:
                     throw ParserError.unknownError(inMethodNamed: "parseSubscriptedAssignment", reason: "There's an assignment operator on line \(programCounter) [curentToken.isAssignment == true], but it wasn't caught in the appropriate switch assignment. Type: \(assignmentType).")
                 }
-                try symbolMap.insert(name: varName, value: dict)
+                symbolMap.insert(name: varName, value: dict)
             }
         case .string:
             throw ParserError.unknownSymbolError(moreInfo: "Subscripting strings and modifying them is a planned feature, but isn't implemented yet.")
@@ -664,9 +663,6 @@ final public class BasicParser: NSObject {
             programCounter += 1 // Increment the program counter (we do this here in case the line modifies the program counter; if we do it after parseLine(), we'd mess it up)
             do {
                 try parseLine()
-            } catch Symbol.SymbolError.unsupportedType(let value) { // Convert SymbolErrors to their equivalent ParserErrors.
-                running = false
-                throw ParserError.unsupportedSymbolDataType(value: value)
             } catch Symbol.SymbolError.cannotAdd(let lhs, let rhs, let reason) {
                 running = false
                 throw ParserError.badMath(failedOperation: "\(lhs.value) + \(rhs.value)", atLine: programCounter, tokenNumber: tokenIndex, reason: reason)

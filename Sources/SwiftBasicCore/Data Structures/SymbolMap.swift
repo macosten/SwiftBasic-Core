@@ -25,7 +25,6 @@ struct SymbolMap {
         } // Why not just use "if (symbol) is Type"? If I did that, then the switch statements wouldn't complain about being exhaustive if I decide to add another symbol type, and it'd be tougher to update...
         
         enum SymbolError : Error { // If we try to do something with two symbols that we shouldn't, an error of this type should be thrown.
-            case unsupportedType(value: Any)
             case cannotAdd(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotSubtract(lhs: Symbol, rhs: Symbol, reason: String? = nil)
             case cannotMultiply(lhs: Symbol, rhs: Symbol, reason: String? = nil)
@@ -520,14 +519,13 @@ struct SymbolMap {
     
     func typeOf(symbolNamed name: String) -> Symbol.SymbolType? { return map[name]?.type }
     
-    /// Attempt to insert a symbol. Throws if the provided value cannot be stored in a symbol.
-    mutating func insert(name: String, value: AnyHashable) throws {
-        if value is Symbol { map[name] = (value as! Symbol) }
-        else if value is Int { map[name] = Symbol(type: .integer, value: value) }
-        else if value is Double { map[name] = Symbol(type: .double, value: value) }
-        else if value is SymbolDictionary { map[name] = Symbol(type: .dictionary, value: value) }
-        else { throw Symbol.SymbolError.unsupportedType(value: value) }
-    }
+    // Separate insert functions to avoid runtime type-checking, eliminate an error type, and reduce the amount of "try"ing.
+    /// Attempt to insert a symbol.
+    mutating func insert(name: String, value: Symbol) { map[name] = value }
+    mutating func insert(name: String, value: Int) { map[name] = Symbol(type: .integer, value: value) }
+    mutating func insert(name: String, value: Double) { map[name] = Symbol(type: .double, value: value) }
+    mutating func insert(name: String, value: String) { map[name] = Symbol(type: .string, value: value) }
+    mutating func insert(name: String, value: SymbolDictionary) { map[name] = Symbol(type: .dictionary, value: value) }
     
     mutating func removeAll() { map.removeAll() }
     
