@@ -612,6 +612,9 @@ final public class BasicParser: NSObject {
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "count", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a dictionary.")
             }
+        case .minus: // This is a unary minus -- multiply the factor that comes after this by -1.
+            try eat(.minus)
+            return try parseFactor() * Symbol(-1)
         case .leftParenthesis: // Assume this is the start of a nested expression; evaluate that expression and return a Symbol with its value.
             let expValue = try parseExpression()
             try eat(.rightParenthesis)

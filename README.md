@@ -3,6 +3,8 @@
 
 **For now, all rights are reserved.** Please don't use this in your projects just yet.
 
+[Programmer's Manual](Docs/MANUAL.md)
+
 A dialect of Basic written in Swift, mostly inspired by [cvharihan's Basic](https://github.com/cvhariharan/Tiny-Basic) and [Commodore BASIC](https://www.c64-wiki.com/wiki/BASIC).
 
 There are a few differences, though:

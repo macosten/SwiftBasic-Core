@@ -366,16 +366,16 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         let code = """
         a = 10
-        b = 20
+        b = -20 * -20
         c = []
-        f = 12.12
+        f = -12.12
         g = pi
         list
         """
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        XCTAssert(testConsole.output == "a == 10\nb == 20\nc == []\nf == 12.12\ng == \(Double.pi)\n")
+        XCTAssert(testConsole.output == "a == 10\nb == 400\nc == []\nf == -12.12\ng == \(Double.pi)\n")
     }
     
     /// Tests autokeyed/array-keyed dictionary literals.
