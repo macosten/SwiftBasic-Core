@@ -43,10 +43,26 @@ struct SymbolMap {
         let type: SymbolType // The variable's type.
         let value: AnyHashable // The value itself.
         // Yes, this means that a symbol will need to be recreated whenever it's mutated.
+
+        // Separate initializers for each supported type here to reduce the chance I misconfigure a symbol somewhere in the codebase.
+        init(_ int: Int) {
+            self.type = .integer
+            self.value = int
+        }
         
-        init (type: SymbolType, value: AnyHashable){
-            self.type = type
-            self.value = value
+        init(_ double: Double) {
+            self.type = .double
+            self.value = double
+        }
+        
+        init(_ string: String) {
+            self.type = .string
+            self.value = string
+        }
+        
+        init(_ dict: SymbolDictionary) {
+            self.type = .dictionary
+            self.value = dict
         }
         
         // It's not possible to get a dictionary symbol from a string.
@@ -106,35 +122,35 @@ struct SymbolMap {
                 }
                 let (value, didOverflow) = lVal.addingReportingOverflow(rVal)
                 if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .plus, factor1: rhs) }
-                return Symbol(type: .integer, value: value)
+                return Symbol(value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
                 guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .double)
                 }
-                return Symbol(type: .double, value: lVal + rVal)
+                return Symbol(lVal + rVal)
             }
             // If the right side is an Int, cast it.
             else if lhs.type == .double && rhs.type == .integer {
                 guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .integer)
                 }
-                return Symbol(type: .double, value: lVal + Double(rVal))
+                return Symbol(lVal + Double(rVal))
             }
             // If the left side is an Int, cast it.
             else if lhs.type == .integer && rhs.type == .double {
                 guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .double)
                 }
-                return Symbol(type: .double, value: Double(lVal) + rVal)
+                return Symbol(Double(lVal) + rVal)
             }
             // If either side is a string, then treat this as a string concatenation.
             else if lhs.type == .string || rhs.type == .string {
                 guard let lVal = try? lhs.asString(), let rVal = try? rhs.asString() else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .string, rightSymbol: rhs, .string)
                 }
-                return Symbol(type: .string, value: lVal + rVal)
+                return Symbol(lVal + rVal)
             }
             
             // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
@@ -151,28 +167,28 @@ struct SymbolMap {
                 }
                 let (value, didOverflow) = lVal.subtractingReportingOverflow(rVal)
                 if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .multiply, factor1: rhs) }
-                return Symbol(type: .integer, value: value)
+                return Symbol(value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
                 guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .double)
                 }
-                return Symbol(type: .double, value: lVal - rVal)
+                return Symbol(lVal - rVal)
             }
             // If the right side is an Int, cast it.
             else if lhs.type == .double && rhs.type == .integer {
                 guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .integer)
                 }
-                return Symbol(type: .double, value: lVal - Double(rVal))
+                return Symbol(lVal - Double(rVal))
             }
             // If the left side is an Int, cast it.
             else if lhs.type == .integer && rhs.type == .double {
                 guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .double)
                 }
-                return Symbol(type: .double, value: Double(lVal) - rVal)
+                return Symbol(Double(lVal) - rVal)
             }
             // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotSubtract(lhs: lhs, rhs: rhs)
@@ -188,28 +204,28 @@ struct SymbolMap {
                 }
                 let (value, didOverflow) = lVal.multipliedReportingOverflow(by: rVal)
                 if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .multiply, factor1: rhs) }
-                return Symbol(type: .integer, value: value)
+                return Symbol(value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
                 guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .double)
                 }
-                return Symbol(type: .double, value: lVal * rVal)
+                return Symbol(lVal * rVal)
             }
             // If the right side is an Int, cast it.
             else if lhs.type == .double && rhs.type == .integer {
                 guard let lVal = lhs.value as? Double, let rVal = rhs.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .integer)
                 }
-                return Symbol(type: .double, value: lVal * Double(rVal))
+                return Symbol(lVal * Double(rVal))
             }
             // If the left side is an Int, cast it.
             else if lhs.type == .integer && rhs.type == .double {
                 guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .double)
                 }
-                return Symbol(type: .double, value: Double(lVal) * rVal)
+                return Symbol(Double(lVal) * rVal)
             }
             // If the left side is a string and the right side is an integer, then return the string repeated a number of times equal to the right side's value.
             else if lhs.type == .string && rhs.type == .integer {
@@ -218,7 +234,7 @@ struct SymbolMap {
                 }
                 // If rVal is negative, we can't multiply.
                 if rVal < 0 { throw SymbolError.cannotMultiply(lhs: lhs, rhs: rhs) }
-                return Symbol(type: .string, value: String(repeating: lVal, count: rVal))
+                return Symbol(String(repeating: lVal, count: rVal))
             }
             // If the right side is a string and the left side is an integer, then return the string repeated a number of times equal to the left side's value.
             else if lhs.type == .integer && rhs.type == .string {
@@ -227,7 +243,7 @@ struct SymbolMap {
                 }
                 // If lVal is negative, we can't multiply.
                 if lVal < 0 { throw SymbolError.cannotMultiply(lhs: lhs, rhs: rhs) }
-                return Symbol(type: .string, value: String(repeating: rVal, count: lVal))
+                return Symbol(String(repeating: rVal, count: lVal))
             }
             
             // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
@@ -245,7 +261,7 @@ struct SymbolMap {
                 if rVal == 0 { throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs, reason: "Division by zero") }
                 let (value, didOverflow) = lVal.dividedReportingOverflow(by: rVal)
                 if didOverflow { throw SymbolError.integerOverflow(factor0: lhs, operation: .multiply, factor1: rhs) }
-                return Symbol(type: .integer, value: value)
+                return Symbol(value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
@@ -253,7 +269,7 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .double)
                 }
                 if rVal == 0.0 { throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs, reason: "Division by zero") }
-                return Symbol(type: .double, value: lVal / rVal)
+                return Symbol(lVal / rVal)
             }
             // If the right side is an Int, cast it.
             else if lhs.type == .double && rhs.type == .integer {
@@ -261,7 +277,7 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .integer)
                 }
                 if rVal == 0 { throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs, reason: "Division by zero") }
-                return Symbol(type: .double, value: lVal / Double(rVal))
+                return Symbol(lVal / Double(rVal))
             }
             // If the left side is an Int, cast it.
             else if lhs.type == .integer && rhs.type == .double {
@@ -269,7 +285,7 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .double)
                 }
                 if rVal == 0.0 { throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs, reason: "Division by zero") }
-                return Symbol(type: .double, value: Double(lVal) / rVal)
+                return Symbol(Double(lVal) / rVal)
             }
             // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotDivide(lhs: lhs, rhs: rhs)
@@ -286,7 +302,7 @@ struct SymbolMap {
                 if rVal == 0 { throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs, reason: "Division (modulo) by zero") }
                 let (value, didOverflow) = lVal.remainderReportingOverflow(dividingBy: rVal)
                 if didOverflow {  }
-                return Symbol(type: .integer, value: value)
+                return Symbol(value)
             }
             // If one or both types is a double, then return a double.
             else if lhs.type == .double && rhs.type == .double {
@@ -294,7 +310,7 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .double)
                 }
                 if rVal == 0.0 { throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs, reason: "Division (modulo) by zero") }
-                return Symbol(type: .double, value: lVal.truncatingRemainder(dividingBy: rVal))
+                return Symbol(lVal.truncatingRemainder(dividingBy: rVal))
             }
             // If the right side is an Int, cast it.
             else if lhs.type == .double && rhs.type == .integer {
@@ -302,7 +318,7 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .double, rightSymbol: rhs, .integer)
                 }
                 if rVal == 0 { throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs, reason: "Division by zero") }
-                return Symbol(type: .double, value: lVal.truncatingRemainder(dividingBy: Double(rVal)))
+                return Symbol(lVal.truncatingRemainder(dividingBy: Double(rVal)))
             }
             // If the left side is an Int, cast it.
             else if lhs.type == .integer && rhs.type == .double {
@@ -310,7 +326,7 @@ struct SymbolMap {
                     throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .double)
                 }
                 if rVal == 0.0 { throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs, reason: "Division by zero") }
-                return Symbol(type: .double, value: Double(lVal).truncatingRemainder(dividingBy: rVal))
+                return Symbol(Double(lVal).truncatingRemainder(dividingBy: rVal))
             }
             // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotModulo(lhs: lhs, rhs: rhs)
@@ -323,28 +339,28 @@ struct SymbolMap {
                 guard let lVal = base.value as? Int, let rVal = exponent.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: base, .integer, rightSymbol: exponent, .integer)
                 }
-                return Symbol(type: .double, value: lVal ** rVal)
+                return Symbol(lVal ** rVal)
             }
                 
             else if base.type == .double && exponent.type == .double {
                 guard let lVal = base.value as? Double, let rVal = exponent.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: base, .double, rightSymbol: exponent, .double)
                 }
-                return Symbol(type: .double, value: lVal ** rVal)
+                return Symbol(lVal ** rVal)
             }
             // If the right side is an Int, cast it.
             else if base.type == .double && exponent.type == .integer {
                 guard let lVal = base.value as? Double, let rVal = exponent.value as? Int else {
                     throw SymbolError.downcastFailed(leftSymbol: base, .double, rightSymbol: exponent, .integer)
                 }
-                return Symbol(type: .double, value: lVal ** rVal)
+                return Symbol(lVal ** rVal)
             }
             // If the left side is an Int, cast it.
             else if base.type == .integer && exponent.type == .double {
                 guard let lVal = base.value as? Int, let rVal = exponent.value as? Double else {
                     throw SymbolError.downcastFailed(leftSymbol: base, .integer, rightSymbol: exponent, .double)
                 }
-                return Symbol(type: .double, value: lVal ** rVal)
+                return Symbol(lVal ** rVal)
             }
             // If the function gets to this point, this is a problem -- the types aren't compatible for this operation (this may not always be reachable, but symbols might be expanded to add more data types in the future).
             throw SymbolError.cannotExponentiate(base: base, exponent: exponent)
@@ -356,7 +372,7 @@ struct SymbolMap {
             // Both sides need to be integers.
             guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitShift(lhs: lhs, rhs: rhs, reason: "Only integers can be bitshifted, and only by another integer.") }
             guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
-            return Symbol(type: .integer, value: lVal << rVal)
+            return Symbol(lVal << rVal)
         }
         
         // MARK: - Shift Right
@@ -364,7 +380,7 @@ struct SymbolMap {
             // Both sides need to be integers.
             guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitShift(lhs: lhs, rhs: rhs, reason: "Only integers can be bitshifted, and only by another integer.") }
             guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
-            return Symbol(type: .integer, value: lVal >> rVal)
+            return Symbol(lVal >> rVal)
         }
         
         // MARK: - Bitwise And
@@ -372,7 +388,7 @@ struct SymbolMap {
             // Both sides need to be integers.
             guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitwiseLogical(lhs: lhs, rhs: rhs, reason: "Only integers support bitwise and, but an attempt was made with at least one non-integer type.") }
             guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
-            return Symbol(type: .integer, value: lVal & rVal)
+            return Symbol(lVal & rVal)
         }
         
         // MARK: - Bitwise Or
@@ -380,7 +396,7 @@ struct SymbolMap {
             // Both sides need to be integers.
             guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitwiseLogical(lhs: lhs, rhs: rhs, reason: "Only integers support bitwise or, but an attempt was made with at least one non-integer type.") }
             guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
-            return Symbol(type: .integer, value: lVal | rVal)
+            return Symbol(lVal | rVal)
         }
         
         // MARK: - Bitwise Xor
@@ -388,7 +404,7 @@ struct SymbolMap {
             // Both sides need to be integers.
             guard lhs.type == .integer, rhs.type == .integer else { throw SymbolError.cannotBitwiseLogical(lhs: lhs, rhs: rhs, reason: "Only integers support bitwise or, but an attempt was made with at least one non-integer type.") }
             guard let lVal = lhs.value as? Int, let rVal = rhs.value as? Int else { throw SymbolError.downcastFailed(leftSymbol: lhs, .integer, rightSymbol: rhs, .integer) }
-            return Symbol(type: .integer, value: lVal ^ rVal)
+            return Symbol(lVal ^ rVal)
         }
         
         // MARK: -- Comparisons
@@ -522,10 +538,10 @@ struct SymbolMap {
     // Separate insert functions to avoid runtime type-checking, eliminate an error type, and reduce the amount of "try"ing.
     /// Attempt to insert a symbol.
     mutating func insert(name: String, value: Symbol) { map[name] = value }
-    mutating func insert(name: String, value: Int) { map[name] = Symbol(type: .integer, value: value) }
-    mutating func insert(name: String, value: Double) { map[name] = Symbol(type: .double, value: value) }
-    mutating func insert(name: String, value: String) { map[name] = Symbol(type: .string, value: value) }
-    mutating func insert(name: String, value: SymbolDictionary) { map[name] = Symbol(type: .dictionary, value: value) }
+    mutating func insert(name: String, value: Int) { map[name] = Symbol(value) }
+    mutating func insert(name: String, value: Double) { map[name] = Symbol(value) }
+    mutating func insert(name: String, value: String) { map[name] = Symbol(value) }
+    mutating func insert(name: String, value: SymbolDictionary) { map[name] = Symbol(value) }
     
     mutating func removeAll() { map.removeAll() }
     

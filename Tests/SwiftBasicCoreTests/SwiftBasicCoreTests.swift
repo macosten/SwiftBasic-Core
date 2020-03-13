@@ -3,6 +3,9 @@ import XCTest
 
 final class SwiftBasicCoreTests: XCTestCase {
     
+    typealias Symbol = SymbolMap.Symbol
+    typealias SymbolDictionary = SymbolMap.SymbolDictionary
+    
     static var allTests = [
         ("testArithmetic", testArithmetic),
         ("testEndFunction", testEndFunction),
@@ -15,7 +18,11 @@ final class SwiftBasicCoreTests: XCTestCase {
         ("testStringSubscript", testStringSubscript),
         ("testTrigFuncs", testTrigFuncs),
         ("testBitwise", testBitwise),
-        ("testDictionaryLiteral", testDictionaryLiteral)
+        ("testDictionaryLiteral", testDictionaryLiteral),
+        ("testSizeFunctions", testSizeFunctions),
+        ("testForLoop", testForLoop),
+        ("testList", testList),
+        ("testAutokeyedDictLiteral", testAutokeyedDictLiteral)
     ]
     
     /// Tests the arithmetic operators. This also tests INPUT and PRINT.
@@ -171,8 +178,6 @@ final class SwiftBasicCoreTests: XCTestCase {
 
     /// Tests the functionality of dictionaries.
     func testDictionary() {
-        typealias Symbol = SymbolMap.Symbol
-               
         let parser = BasicParser()
         let testConsole = TestConsole()
         parser.delegate = testConsole
@@ -198,15 +203,14 @@ final class SwiftBasicCoreTests: XCTestCase {
         try! parser.loadCode(fromString: code)
         try! parser.run()
         
-        let dict = parser.symbolMap.get(symbolNamed: "b")!.value as! SymbolMap.SymbolDictionary
-        XCTAssert(try dict[Symbol(type: .integer, value: random)]!.asString() == "🍪")
-        XCTAssert(dict[Symbol(type: .string, value: "3 * 3")]!.value as! Int == 9)
+        let dict = parser.symbolMap.get(symbolNamed: "b")!.value as! SymbolDictionary
+        XCTAssert(try dict[Symbol(random)]!.asString() == "🍪")
+        XCTAssert(dict[Symbol("3 * 3")]!.value as! Int == 9)
         
     }
     
     /// Tests the rand() function (to at least make sure it doesn't crashy).
     func testRand() {
-
         let parser = BasicParser()
         let testConsole = TestConsole()
         parser.delegate = testConsole
@@ -259,7 +263,6 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        // print(testConsole.output)
     }
     
     /// Tests the bitwise operators.
@@ -352,8 +355,53 @@ final class SwiftBasicCoreTests: XCTestCase {
         
         try! parser.loadCode(fromString: code)
         try! parser.run()
-        print(testConsole.output)
         XCTAssert(testConsole.output == "1\n2\n3\n4\n5\n6\n7\n8\n9\nS\nw\ni\nf\nt\nB\na\ns\ni\nc\n")
+    }
+    
+    /// Tests the LIST command -- I realize I haven't tested it yet, oops...
+    func testList() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        a = 10
+        b = 20
+        c = []
+        f = 12.12
+        g = pi
+        list
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        XCTAssert(testConsole.output == "a == 10\nb == 20\nc == []\nf == 12.12\ng == \(Double.pi)\n")
+    }
+    
+    /// Tests autokeyed/array-keyed dictionary literals.
+    func testAutokeyedDictLiteral() {
+        let parser = BasicParser()
+        let testConsole = TestConsole()
+        parser.delegate = testConsole
+        
+        let code = """
+        a = [0,1,2,3,4,5]
+        for i in 0 to count(a)
+            print a[i]
+        next
+        b = ["a","b",0:"c"]
+        """
+        
+        try! parser.loadCode(fromString: code)
+        try! parser.run()
+        print(testConsole.output)
+        XCTAssert(testConsole.output == "0\n1\n2\n3\n4\n5\n") // Since dictionaries don't have a guaranteed order, printing it and statically comparing it to an expected output wouldn't make much sense
+        
+        let b = parser.symbolMap.get(symbolNamed: "b")!.value as! SymbolDictionary
+        XCTAssert(b.count == 2) // Yeah, the later 0:"c" key-value pair overwrites the autokeyed 0 entry. I'm not sure if this is the behavior I necessarily want, but for now I'll accept it since I'm not sure what other behavior would necessarily be better -- this, at least, keeps the code simpler.
+        XCTAssert(b[Symbol(0)]!.value as! String == "c")
+        XCTAssert(b[Symbol(1)]!.value as! String == "b")
+        
     }
     
 }

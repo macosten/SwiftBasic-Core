@@ -480,7 +480,7 @@ final public class BasicParser: NSObject {
                 let index = string.index(string.startIndex, offsetBy: indexValue)
                 guard string.indices.contains(index) else { throw ParserError.badSubscript(atLine: programCounter, tokenNumber: tokenIndex) }
 
-                symbol = Symbol(type: .string, value: String(string[index])) // Replace the symbol with one whose value is just the character in a string.
+                symbol = Symbol(String(string[index])) // Replace the symbol with one whose value is just the character in a string.
                 
                 try eat(.rightSquareBracket)
             }
@@ -488,15 +488,15 @@ final public class BasicParser: NSObject {
         case .integer: // Return a Symbol with this integer's value.
             let intValue = currentToken.intValue!
             try eat(.integer)
-            return Symbol(type: .integer, value: intValue)
+            return Symbol(intValue)
         case .double: // Return a Symbol with this double's value.
             let doubleValue = currentToken.doubleValue!
             try eat(.double)
-            return Symbol(type: .double, value: doubleValue)
+            return Symbol(doubleValue)
         case .stringLiteral: // This might just be a string literal, in which case we should just return a symbol with it.
             let stringValue = currentToken.stringValue!
             try eat(.stringLiteral)
-            return Symbol(type: .string, value: stringValue)
+            return Symbol(stringValue)
 // MARK: - Math Function Parsing
         case .rand: // rand(lowerBound, upperBound) == (number between lowerBound and upperBound)
             let arguments = try parseBuiltinFunctionArguments(.rand, argumentCount: 2)
@@ -509,14 +509,14 @@ final public class BasicParser: NSObject {
             guard let lInt = lowerBound.value as? Int, let hInt = upperBound.value as? Int else { throw ParserError.internalDowncastError(moreInfo: "While computing a random number, the upper and lower integer bounds weren't integers. This is probably a bug with something somewhere...") }
             guard lInt < hInt else { throw ParserError.badMath(failedOperation: "rand(\(lInt), \(hInt))", atLine: programCounter, tokenNumber: tokenIndex, reason: "The lower bound for rand() must be less than the upper bound.") }
             
-            return Symbol(type: .integer, value: Int.random(in: lInt...hInt))
+            return Symbol(Int.random(in: lInt...hInt))
         case .sine: // sin(arg)
             let argument = try parseBuiltinFunctionArguments(.sine, argumentCount: 1)[0] // Calculate the argument.
             // Evaluate the function.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: sin(Double(intValue)))
+                return Symbol(sin(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: sin(doubleValue))
+                return Symbol(sin(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "sin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
@@ -524,9 +524,9 @@ final public class BasicParser: NSObject {
             let argument = try parseBuiltinFunctionArguments(.cosine, argumentCount: 1)[0] // Calculate the argument.
             // Evaluate the function.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: cos(Double(intValue)))
+                return Symbol(cos(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: cos(doubleValue))
+                return Symbol(cos(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "cos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
@@ -534,9 +534,9 @@ final public class BasicParser: NSObject {
             let argument = try parseBuiltinFunctionArguments(.tangent, argumentCount: 1)[0] // Calculate the argument.
             // Evaluate the function.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: tan(Double(intValue)))
+                return Symbol(tan(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: tan(doubleValue))
+                return Symbol(tan(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "tan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
@@ -545,9 +545,9 @@ final public class BasicParser: NSObject {
             // Evaluate the function.
             if let intValue = argument.value as? Int {
                 // These will never be completely precise -- it's just the nature of limited-precision numbers like Doubles. Thus, the risk of accidentally dividing by zero is not actually 
-                return Symbol(type: .double, value: 1 / cos(Double(intValue)))
+                return Symbol(1 / cos(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: 1 / cos(doubleValue))
+                return Symbol(1 / cos(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "sec", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
@@ -555,9 +555,9 @@ final public class BasicParser: NSObject {
             let argument = try parseBuiltinFunctionArguments(.cosecant, argumentCount: 1)[0] // Calculate the argument.
             // Evaluate the function.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: 1 / sin(Double(intValue)))
+                return Symbol(1 / sin(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: 1 / sin(doubleValue))
+                return Symbol(1 / sin(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "csc", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
@@ -565,50 +565,50 @@ final public class BasicParser: NSObject {
             let argument = try parseBuiltinFunctionArguments(.cotangent, argumentCount: 1)[0] // Calculate the argument.
             // Evaluate the function.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: 1 / tan(Double(intValue)))
+                return Symbol(1 / tan(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: 1 / tan(doubleValue))
+                return Symbol(1 / tan(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "cot", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .arcsine:
             let argument = try parseBuiltinFunctionArguments(.arcsine, argumentCount: 1)[0] // Calculate the argument.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: asin(Double(intValue)))
+                return Symbol(asin(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: asin(doubleValue))
+                return Symbol(asin(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "asin", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .arccosine:
             let argument = try parseBuiltinFunctionArguments(.arccosine, argumentCount: 1)[0] // Calculate the argument.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: acos(Double(intValue)))
+                return Symbol(acos(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: acos(doubleValue))
+                return Symbol(acos(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "acos", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .arctangent:
             let argument = try parseBuiltinFunctionArguments(.arctangent, argumentCount: 1)[0] // Calculate the argument.
             if let intValue = argument.value as? Int {
-                return Symbol(type: .double, value: atan(Double(intValue)))
+                return Symbol(atan(Double(intValue)))
             } else if let doubleValue = argument.value as? Double {
-                return Symbol(type: .double, value: atan(doubleValue))
+                return Symbol(atan(doubleValue))
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "atan", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a number.")
             }
         case .length: // Returns the length of a string.
             let argument = try parseBuiltinFunctionArguments(.length, argumentCount: 1)[0]
             if let stringValue = argument.value as? String {
-                return Symbol(type: .integer, value: stringValue.count)
+                return Symbol(stringValue.count)
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "len", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a string.")
             }
         case .count: // Returns the number of elements in a dictionary.
             let argument = try parseBuiltinFunctionArguments(.count, argumentCount: 1)[0]
             if let dict = argument.value as? SymbolDictionary {
-                return Symbol(type: .integer, value: dict.count)
+                return Symbol(dict.count)
             } else {
                 throw ParserError.badFunctionArgument(failedOperation: "count", atLine: programCounter, tokenNumber: tokenIndex, reason: "The argument must be a dictionary.")
             }
@@ -640,17 +640,24 @@ final public class BasicParser: NSObject {
     private func parseDictionaryLiteral() throws -> Symbol {
         var newDict = SymbolDictionary()
         try eat(.leftSquareBracket)
+        var arrayIndexCounter = 0
         while currentToken.type != .rightSquareBracket {
-            // Parse the new key and value.
+            // Parse the first symbol before the comma.
             let newKey = try parseExpression()
-            try eat(.colon)
-            let newValue = try parseExpression()
-            // Add it to the dictionary.
-            newDict[newKey] = newValue
+            switch currentToken.type {
+            case .colon: // If there's a colon, then newKey is a key, and the expression after it is the value.
+                try eat(.colon)
+                let newValue = try parseExpression()
+                // Add it to the dictionary.
+                newDict[newKey] = newValue
+            default: // Otherwise, newKey is the value we're trying to store, so let's put it in with an integer key.
+                newDict[Symbol(arrayIndexCounter)] = newKey
+                arrayIndexCounter += 1 // Increment the counter, so that the next symbol we add will be keyed to the next index.
+            }
             if currentToken.type != .rightSquareBracket { try eat(.comma) }
         }
         try eat(.rightSquareBracket)
-        return Symbol(type: .dictionary, value: newDict)
+        return Symbol(newDict)
     }
    
     // private func parseRemainderOfDictionaryAsArrayLiteral() throws -> Symbol { }
