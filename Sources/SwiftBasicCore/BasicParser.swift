@@ -375,11 +375,11 @@ final public class BasicParser: NSObject {
             return try termSymbol - nextSymbol
         case .bitwiseOr:
             try eat(.bitwiseOr)
-            let nextSymbol = try parseFactor()
+            let nextSymbol = try parseTerm()
             return try termSymbol | nextSymbol
         case .bitwiseXor:
             try eat(.bitwiseXor)
-            let nextSymbol = try parseFactor()
+            let nextSymbol = try parseTerm()
             return try termSymbol ^ nextSymbol
         default:
             return termSymbol
@@ -404,7 +404,7 @@ final public class BasicParser: NSObject {
             return try exponentialSymbol % nextSymbol
         case .bitwiseAnd:
             try eat(.bitwiseAnd)
-            let nextSymbol = try parseFactor()
+            let nextSymbol = try parseExponential()
             return try exponentialSymbol & nextSymbol
         default:
             return exponentialSymbol
